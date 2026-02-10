@@ -1,0 +1,54 @@
+name: Multi-User Runner
+
+on:
+  repository_dispatch:
+    types: [run-code]
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run Code & Handle Concurrency
+        env:
+          # We get these from the PHP payload
+          USER_CODE: ${{ github.event.client_payload.code }}
+          RUN_ID: ${{ github.event.client_payload.run_id }}
+        run: |
+          # 1. Setup
+          mkdir -p outputs
+          echo "$USER_CODE" > script.sh
+          chmod +x script.sh
+
+          # 2. Run the user's code
+          # We capture output into a UNIQUE file based on the RUN_ID
+          OUTPUT_FILE="outputs/${RUN_ID}.txt"
+          
+          echo "--- Run ID: $RUN_ID ---" > "$OUTPUT_FILE"
+          ./script.sh >> "$OUTPUT_FILE" 2>&1 || true
+          
+          # 3. CONCURRENCY HANDLING (The Magic Part)
+          # We configure git and then enter a loop.
+          # If 'git push' fails (because another user just pushed),
+          # we pull the latest changes and try again.
+          
+          git config --global user.name 'Colab-Bot'
+          git config --global user.email 'bot@noreply.github.com'
+          
+          # Retry up to 10 times
+          for i in {1..10}; do
+            git add "$OUTPUT_FILE"
+            git commit -m "Add output for $RUN_ID"
+            
+            # Try to pull (rebase) and push. 
+            # If successful, break the loop.
+            git pull --rebase && git push && break
+            
+            # If failed, wait 1-5 seconds randomly and try again
+            echo "Push conflict! Retrying..."
+            sleep $((RANDOM % 5 + 1))
+          done
