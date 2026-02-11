@@ -1,4 +1,4 @@
-name: DevBox Runner
+name: Turbo Runner
 
 on:
   repository_dispatch:
@@ -11,39 +11,26 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Execute User Code
-        id: run_script
+      # OPTIMIZATION: We REMOVED "checkout". We don't need to download the repo to run a script.
+      
+      - name: Run & Upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 1. Create a safe script file
+          # 1. Prepare Script
           echo "${{ github.event.client_payload.code }}" > script.sh
           chmod +x script.sh
           
-          # 2. Run it and save output to a temp file
-          # We capture both Standard Output (STDOUT) and Errors (STDERR)
+          # 2. Run Code (Capture Output)
           ./script.sh > output.txt 2>&1 || true
           
-          # 3. Read content for next step
-          CONTENT=$(cat output.txt)
-          echo "OUTPUT<<EOF" >> $GITHUB_ENV
-          echo "$CONTENT" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Save Result to Repo
-        run: |
-          # Configure Git
-          git config --global user.name "DevBox Bot"
-          git config --global user.email "bot@devbox.local"
+          # 3. TURBO UPLOAD (Direct API Call)
+          # Instead of slow 'git push', we use the GitHub CLI (gh) to upload instantly.
           
-          # Create outputs folder if missing
-          mkdir -p outputs
+          CONTENT=$(base64 -w 0 output.txt)
           
-          # Save result using the specific Run ID
-          cp output.txt outputs/${{ github.event.client_payload.run_id }}.txt
-          
-          # Commit and Push
-          git add outputs/
-          git commit -m "Result for ${{ github.event.client_payload.run_id }}"
-          git push
+          gh api --method PUT \
+            /repos/${{ github.repository }}/contents/outputs/${{ github.event.client_payload.run_id }}.txt \
+            -f message="Fast Result" \
+            -f content="$CONTENT" \
+            -f encoding="base64"
