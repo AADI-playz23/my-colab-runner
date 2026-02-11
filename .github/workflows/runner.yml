@@ -1,4 +1,4 @@
-name: Turbo Runner
+name: Robust Runner
 
 on:
   repository_dispatch:
@@ -11,26 +11,24 @@ jobs:
       contents: write
 
     steps:
-      # OPTIMIZATION: We REMOVED "checkout". We don't need to download the repo to run a script.
-      
-      - name: Run & Upload
+      - name: Save User Code Safely
         env:
+          # We load the code into a variable first
+          USER_CODE: ${{ github.event.client_payload.code }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 1. Prepare Script
-          echo "${{ github.event.client_payload.code }}" > script.sh
+          # 1. Use Python to write the file safely (Fixes the Quote/Syntax Bug)
+          python3 -c "import os; open('script.sh', 'w').write(os.environ['USER_CODE'])"
           chmod +x script.sh
           
-          # 2. Run Code (Capture Output)
+          # 2. Run the script and save output (Capture errors too)
           ./script.sh > output.txt 2>&1 || true
           
-          # 3. TURBO UPLOAD (Direct API Call)
-          # Instead of slow 'git push', we use the GitHub CLI (gh) to upload instantly.
-          
+          # 3. Upload Result instantly using GitHub API
           CONTENT=$(base64 -w 0 output.txt)
           
           gh api --method PUT \
             /repos/${{ github.repository }}/contents/outputs/${{ github.event.client_payload.run_id }}.txt \
-            -f message="Fast Result" \
+            -f message="Result" \
             -f content="$CONTENT" \
             -f encoding="base64"
