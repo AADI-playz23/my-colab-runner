@@ -1,0 +1,6 @@
+Files in this folder:
+total 16
+drwxr-xr-x 2 runner runner 4096 Feb 11 14:43 .
+drwxr-xr-x 3 runner runner 4096 Feb 11 14:43 ..
+-rw-r--r-- 1 runner runner   22 Feb 11 14:43 output.txt
+-rwxr-xr-x 1 runner runner   34 Feb 11 14:43 script.sh
