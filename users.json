@@ -1,4 +1,15 @@
 [
-    {"username": "admin", "password": "password123"},
-    {"username": "dev", "password": "devpassword"}
+    {
+        "username": "admin",
+        "password": "password123"
+    },
+    {
+        "username": "dev",
+        "password": "devpassword"
+    },
+    {
+        "username": "AADI",
+        "password": "aadibaba",
+        "created": "2026-02-11T04:49:56-05:00"
+    }
 ]
