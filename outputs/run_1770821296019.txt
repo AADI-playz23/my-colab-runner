@@ -1,0 +1,18 @@
+Main.java:3: error: ')' expected
+        System.out.println(Java is running perfectly on DevBox!);
+                               ^
+Main.java:3: error: ';' expected
+        System.out.println(Java is running perfectly on DevBox!);
+                                          ^
+Main.java:3: error: ';' expected
+        System.out.println(Java is running perfectly on DevBox!);
+                                                       ^
+Main.java:3: error: not a statement
+        System.out.println(Java is running perfectly on DevBox!);
+                                                        ^
+Main.java:3: error: ';' expected
+        System.out.println(Java is running perfectly on DevBox!);
+                                                              ^
+5 errors
+Error: Could not find or load main class Main
+Caused by: java.lang.ClassNotFoundException: Main
