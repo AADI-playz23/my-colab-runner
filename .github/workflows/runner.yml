@@ -1,4 +1,4 @@
-name: Multi-User Runner
+name: DevBox Runner
 
 on:
   repository_dispatch:
@@ -9,46 +9,41 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Run Code & Handle Concurrency
-        env:
-          # We get these from the PHP payload
-          USER_CODE: ${{ github.event.client_payload.code }}
-          RUN_ID: ${{ github.event.client_payload.run_id }}
+      - name: Execute User Code
+        id: run_script
         run: |
-          # 1. Setup
-          mkdir -p outputs
-          echo "$USER_CODE" > script.sh
+          # 1. Create a safe script file
+          echo "${{ github.event.client_payload.code }}" > script.sh
           chmod +x script.sh
+          
+          # 2. Run it and save output to a temp file
+          # We capture both Standard Output (STDOUT) and Errors (STDERR)
+          ./script.sh > output.txt 2>&1 || true
+          
+          # 3. Read content for next step
+          CONTENT=$(cat output.txt)
+          echo "OUTPUT<<EOF" >> $GITHUB_ENV
+          echo "$CONTENT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
-          # 2. Run the user's code
-          # We capture output into a UNIQUE file based on the RUN_ID
-          OUTPUT_FILE="outputs/${RUN_ID}.txt"
+      - name: Save Result to Repo
+        run: |
+          # Configure Git
+          git config --global user.name "DevBox Bot"
+          git config --global user.email "bot@devbox.local"
           
-          echo "--- Run ID: $RUN_ID ---" > "$OUTPUT_FILE"
-          ./script.sh >> "$OUTPUT_FILE" 2>&1 || true
+          # Create outputs folder if missing
+          mkdir -p outputs
           
-          # 3. CONCURRENCY HANDLING (The Magic Part)
-          # We configure git and then enter a loop.
-          # If 'git push' fails (because another user just pushed),
-          # we pull the latest changes and try again.
+          # Save result using the specific Run ID
+          cp output.txt outputs/${{ github.event.client_payload.run_id }}.txt
           
-          git config --global user.name 'Colab-Bot'
-          git config --global user.email 'bot@noreply.github.com'
-          
-          # Retry up to 10 times
-          for i in {1..10}; do
-            git add "$OUTPUT_FILE"
-            git commit -m "Add output for $RUN_ID"
-            
-            # Try to pull (rebase) and push. 
-            # If successful, break the loop.
-            git pull --rebase && git push && break
-            
-            # If failed, wait 1-5 seconds randomly and try again
-            echo "Push conflict! Retrying..."
-            sleep $((RANDOM % 5 + 1))
-          done
+          # Commit and Push
+          git add outputs/
+          git commit -m "Result for ${{ github.event.client_payload.run_id }}"
+          git push
