@@ -1,0 +1,13 @@
+app.c: In function ‘main’:
+app.c:4:12: error: ‘C’ undeclared (first use in this function)
+    4 |     printf(C Language is working!\n);
+      |            ^
+app.c:4:12: note: each undeclared identifier is reported only once for each function it appears in
+app.c:4:13: error: expected ‘)’ before ‘Language’
+    4 |     printf(C Language is working!\n);
+      |           ~ ^~~~~~~~~
+      |             )
+app.c:4:34: error: stray ‘\’ in program
+    4 |     printf(C Language is working!\n);
+      |                                  ^
+./script.sh: line 13: ./app: No such file or directory
