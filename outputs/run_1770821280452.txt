@@ -1,0 +1,4 @@
+  File "/home/runner/work/my-colab-runner/my-colab-runner/app.py", line 1
+    print(Hello from Python!)
+                ^^^^
+SyntaxError: invalid syntax
