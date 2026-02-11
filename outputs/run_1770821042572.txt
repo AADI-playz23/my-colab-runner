@@ -1,0 +1,7 @@
+app.c:1:19: warning: extra tokens at end of #include directive
+    1 | #include <stdio.h>\n int main() { printf(C/C++ Running\n); return 0; }
+      |                   ^
+/usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o: in function `_start':
+(.text+0x1b): undefined reference to `main'
+collect2: error: ld returned 1 exit status
+./script.sh: line 3: ./app: No such file or directory
