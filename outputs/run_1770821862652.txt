@@ -1,0 +1,5 @@
+Hello from Rust! 🦀
+Counting: 1
+Counting: 2
+Counting: 3
+DevBox supports Rust
