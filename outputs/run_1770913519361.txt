@@ -1,0 +1,8 @@
+./script.sh: line 2: import: command not found
+./script.sh: line 3: import: command not found
+./script.sh: line 4: import: command not found
+./script.sh: line 5: import: command not found
+./script.sh: line 6: import: command not found
+./script.sh: line 7: from: command not found
+./script.sh: line 10: syntax error near unexpected token `"📂 Mounting Google Drive..."'
+./script.sh: line 10: `print("📂 Mounting Google Drive...")'
