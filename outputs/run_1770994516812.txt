@@ -1,0 +1,2 @@
+./script.sh: line 2: syntax error near unexpected token `('
+./script.sh: line 2: `int main() {'
