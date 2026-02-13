@@ -1,0 +1,15 @@
+temp.c: In function ‘main’:
+temp.c:2:21: warning: missing terminating " character
+    2 | int main() { printf("Hello from C
+      |                     ^
+temp.c:2:21: error: missing terminating " character
+    2 | int main() { printf("Hello from C
+      |                     ^~~~~~~~~~~~~
+temp.c:3:1: warning: missing terminating " character
+    3 | "); return 0; }
+      | ^
+temp.c:3:1: error: missing terminating " character
+    3 | "); return 0; }
+      | ^~~~~~~~~~~~~~~
+temp.c:3:1: error: expected expression at end of input
+temp.c:3:1: error: expected declaration or statement at end of input
