@@ -1,0 +1,2 @@
+./script.sh: line 1: -: command not found
+./script.sh: line 2: run:: command not found
