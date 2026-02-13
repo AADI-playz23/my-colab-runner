@@ -1,0 +1,4 @@
+./script.sh: line 1: -: command not found
+./script.sh: line 2: shell:: command not found
+./script.sh: line 4: syntax error near unexpected token `"Hello from an inline script!"'
+./script.sh: line 4: `          print("Hello from an inline script!")'
