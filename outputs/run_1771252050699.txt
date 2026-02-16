@@ -1,0 +1,91 @@
+Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+Get:3 https://packages.microsoft.com/repos/azure-cli noble InRelease [3564 B]
+Get:4 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+Hit:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease
+Get:5 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+Get:6 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+Get:7 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+Get:8 https://packages.microsoft.com/repos/azure-cli noble/main amd64 Packages [2129 B]
+Get:9 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [69.0 kB]
+Get:10 https://packages.microsoft.com/ubuntu/24.04/prod noble/main all Packages [643 B]
+Get:11 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [89.6 kB]
+Get:12 https://packages.microsoft.com/ubuntu/24.04/prod noble/main armhf Packages [11.4 kB]
+Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1743 kB]
+Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [325 kB]
+Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Components [175 kB]
+Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 c-n-f Metadata [16.5 kB]
+Get:17 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1528 kB]
+Get:18 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [313 kB]
+Get:19 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Components [386 kB]
+Get:20 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 c-n-f Metadata [31.9 kB]
+Get:21 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [2594 kB]
+Get:22 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [595 kB]
+Get:23 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Components [212 B]
+Get:24 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Components [940 B]
+Get:25 http://azure.archive.ubuntu.com/ubuntu noble-backports/main amd64 Components [7300 B]
+Get:26 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Components [10.5 kB]
+Get:27 http://azure.archive.ubuntu.com/ubuntu noble-backports/restricted amd64 Components [216 B]
+Get:28 http://azure.archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Components [212 B]
+Get:29 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1448 kB]
+Get:30 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [234 kB]
+Get:31 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Components [21.5 kB]
+Get:32 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 c-n-f Metadata [9892 B]
+Get:33 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [933 kB]
+Get:34 http://azure.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [213 kB]
+Get:35 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Components [74.2 kB]
+Get:36 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 c-n-f Metadata [19.9 kB]
+Get:37 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [2452 kB]
+Get:38 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [564 kB]
+Get:39 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Components [212 B]
+Get:40 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse amd64 Components [212 B]
+Fetched 14.3 MB in 2s (6573 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+xvfb is already the newest version (2:21.1.12-1ubuntu1.5).
+python3-dev is already the newest version (3.12.3-0ubuntu2.1).
+Suggested packages:
+  blt-demo tix python3-tk-dbg
+The following NEW packages will be installed:
+  blt python3-tk tk8.6-blt2.5
+0 upgraded, 3 newly installed, 0 to remove and 20 not upgraded.
+Need to get 737 kB of archives.
+After this operation, 2507 kB of additional disk space will be used.
+Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+Get:2 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 tk8.6-blt2.5 amd64 2.5.3+dfsg-7build1 [630 kB]
+Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 blt amd64 2.5.3+dfsg-7build1 [4840 B]
+Get:4 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 python3-tk amd64 3.12.3-0ubuntu1 [102 kB]
+Fetched 737 kB in 0s (7181 kB/s)
+Selecting previously unselected package tk8.6-blt2.5.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 218331 files and directories currently installed.)
+Preparing to unpack .../tk8.6-blt2.5_2.5.3+dfsg-7build1_amd64.deb ...
+Unpacking tk8.6-blt2.5 (2.5.3+dfsg-7build1) ...
+Selecting previously unselected package blt.
+Preparing to unpack .../blt_2.5.3+dfsg-7build1_amd64.deb ...
+Unpacking blt (2.5.3+dfsg-7build1) ...
+Selecting previously unselected package python3-tk:amd64.
+Preparing to unpack .../python3-tk_3.12.3-0ubuntu1_amd64.deb ...
+Unpacking python3-tk:amd64 (3.12.3-0ubuntu1) ...
+Setting up tk8.6-blt2.5 (2.5.3+dfsg-7build1) ...
+Setting up blt (2.5.3+dfsg-7build1) ...
+Setting up python3-tk:amd64 (3.12.3-0ubuntu1) ...
+Processing triggers for libc-bin (2.39-0ubuntu8.7) ...
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+Defaulting to user installation because normal site-packages is not writeable
+Collecting psutil
+  Downloading psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl.metadata (22 kB)
+Downloading psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl (155 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 155.6/155.6 kB 13.7 MB/s eta 0:00:00
+Installing collected packages: psutil
+Successfully installed psutil-7.2.2
+python3: can't open file '/home/runner/work/my-colab-runner/my-colab-runner/monitor.py': [Errno 2] No such file or directory
