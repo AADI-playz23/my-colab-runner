@@ -1,0 +1,2 @@
+./script.sh: line 3: syntax error near unexpected token `"Hello from the terminal!"'
+./script.sh: line 3: `print("Hello from the terminal!")'
