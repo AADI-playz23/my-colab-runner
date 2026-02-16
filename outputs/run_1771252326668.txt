@@ -1,0 +1,4 @@
+--- SYSTEM SNAPSHOT ---
+CPU Usage: 1.0%
+RAM Usage: 11.9%
+-----------------------
