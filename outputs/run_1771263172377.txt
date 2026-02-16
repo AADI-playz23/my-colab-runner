@@ -1,0 +1,6 @@
+--- DEVBOX HARDWARE REPORT ---
+Processor: AMD EPYC 7763 64-Core Processor
+Cores:     1
+Threads:   2
+Total RAM: 7.76 GB
+------------------------------
