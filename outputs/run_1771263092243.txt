@@ -1,0 +1,6 @@
+--- DEVBOX HARDWARE REPORT ---
+Processor: AMD EPYC 9V74 80-Core Processor
+Cores:     1
+Threads:   2
+Total RAM: 7.75 GB
+------------------------------
