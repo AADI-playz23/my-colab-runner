@@ -1,0 +1,4 @@
+./script.sh: line 1: import: command not found
+./script.sh: line 2: import: command not found
+./script.sh: line 4: syntax error near unexpected token `"1. Creating 'gamer' account for LunarHost..."'
+./script.sh: line 4: `print("1. Creating 'gamer' account for LunarHost...")'
