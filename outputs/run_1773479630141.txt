@@ -1,0 +1,2 @@
+./script.sh: line 2: syntax error near unexpected token `"i love"'
+./script.sh: line 2: `print("i love")'
