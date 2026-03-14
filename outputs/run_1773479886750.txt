@@ -1,0 +1,3 @@
+./script.sh: line 1: class: command not found
+./script.sh: line 2: syntax error near unexpected token `('
+./script.sh: line 2: `    public static void main(String[] args) {'
