@@ -1,0 +1,2 @@
+./script.sh: line 1: syntax error near unexpected token `('
+./script.sh: line 1: `	dotnet script exec "Console.WriteLine(\"i love\");" (Requires dotnet-script)'
