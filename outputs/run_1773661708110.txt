@@ -1,0 +1,5 @@
+./script.sh: line 1: import: command not found
+./script.sh: line 2: from: command not found
+./script.sh: line 3: from: command not found
+./script.sh: line 6: syntax error near unexpected token `"🔐 Fetching GitHub Token from Colab Secrets..."'
+./script.sh: line 6: `print("🔐 Fetching GitHub Token from Colab Secrets...")'
