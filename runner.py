@@ -10,26 +10,23 @@ import websockets
 import re
 import shutil
 from urllib import request, parse
+import redis
 
-API_URL = os.environ.get("API_URL", "https://devbox.42web.io/worker_api.php")
+REDIS_HOST = os.environ.get("REDIS_HOST", "blooming-glove-existence-12929.db.redis.io")
+REDIS_PORT = int(os.environ.get("REDIS_PORT", "11619"))
+REDIS_PASS = os.environ.get("REDIS_PASS", "RzhVwv9LrOuQI9wNpO2IdRKVynCVQO6Z")
+
 PORT = 8080
 MAX_SLOTS = 20
 
 active_sessions = {}
 worker_url = None
 
-def api_call(op, payload=None):
-    try:
-        if payload is None:
-            payload = {}
-        payload['op'] = op
-        data = json.dumps(payload).encode('utf-8')
-        req = request.Request(API_URL, data=data, headers={'Content-Type': 'application/json'})
-        with request.urlopen(req, timeout=10) as response:
-            return json.loads(response.read().decode('utf-8'))
-    except Exception as e:
-        print(f"API Error ({op}): {e}")
-        return {"status": "error"}
+redis_client = None
+try:
+    redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASS, decode_responses=True)
+except Exception as e:
+    print(f"Redis connection failed: {e}")
 
 def start_tunnel():
     global worker_url
@@ -54,7 +51,7 @@ async def job_poller():
     while worker_url is None:
         await asyncio.sleep(1)
         
-    print("Starting job poller...")
+    print("Starting Redis job poller...")
     while True:
         try:
             current_time = time.time()
@@ -66,12 +63,13 @@ async def job_poller():
             for sid in to_remove:
                 close_session(sid)
             
-            if len(active_sessions) < MAX_SLOTS:
-                res = api_call("get_job")
-                if res.get('status') == 'success':
-                    session_id = res['session_id']
-                    plan = res.get('plan', 'free')
-                    timeout_secs = int(res.get('timeout_secs', 1800))
+            if len(active_sessions) < MAX_SLOTS and redis_client:
+                job_json = redis_client.lpop("devbox_queue")
+                if job_json:
+                    job = json.loads(job_json)
+                    session_id = job.get('session_id')
+                    plan = job.get('plan', 'free')
+                    timeout_secs = int(job.get('timeout_secs', 1800))
                     
                     print(f"Claimed job {session_id} (Plan: {plan})")
                     
@@ -84,15 +82,12 @@ async def job_poller():
                         "ws": None
                     }
                     
-                    api_call("update_status", {
-                        "session_id": session_id,
-                        "status": "active",
-                        "worker_url": worker_url
-                    })
+                    # Announce URL
+                    redis_client.setex(f"devbox_url:{session_id}", timeout_secs, worker_url)
         except Exception as e:
             print(f"Poller error: {e}")
         
-        await asyncio.sleep(3)
+        await asyncio.sleep(2)
 
 def close_session(session_id):
     if session_id in active_sessions:
@@ -102,7 +97,8 @@ def close_session(session_id):
         if sdata.get("master_fd"):
             os.close(sdata["master_fd"])
         del active_sessions[session_id]
-        api_call("update_status", {"session_id": session_id, "status": "closed"})
+        if redis_client:
+            redis_client.delete(f"devbox_url:{session_id}")
 
 def get_dir_size(path):
     total = 0
