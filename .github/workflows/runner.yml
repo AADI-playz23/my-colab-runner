@@ -1,34 +1,27 @@
-name: Robust Runner
-
+name: DevBox Runner
 on:
   repository_dispatch:
-    types: [run-code]
+    types: [start-runner]
 
 jobs:
-  execute:
+  run-worker:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-      - name: Save User Code Safely
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install redis
+
+      - name: Start Runner
         env:
-          # We load the code into a variable first
-          USER_CODE: ${{ github.event.client_payload.code }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # 1. Use Python to write the file safely (Fixes the Quote/Syntax Bug)
-          python3 -c "import os; open('script.sh', 'w').write(os.environ['USER_CODE'])"
-          chmod +x script.sh
-          
-          # 2. Run the script and save output (Capture errors too)
-          ./script.sh > output.txt 2>&1 || true
-          
-          # 3. Upload Result instantly using GitHub API
-          CONTENT=$(base64 -w 0 output.txt)
-          
-          gh api --method PUT \
-            /repos/${{ github.repository }}/contents/outputs/${{ github.event.client_payload.run_id }}.txt \
-            -f message="Result" \
-            -f content="$CONTENT" \
-            -f encoding="base64"
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_PASS: ${{ secrets.REDIS_PASS }}
+          RUNNER_ID: ${{ github.run_id }}
+        run: python runner.py
