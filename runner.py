@@ -1,157 +1,285 @@
 import os
 import time
 import json
-import redis
 import threading
 import subprocess
 import select
 import pty
-from datetime import datetime
+import asyncio
+import websockets
+import re
+import shutil
+from urllib import request, parse
 
-REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
-REDIS_PASS = os.environ.get("REDIS_PASS", "")
+API_URL = os.environ.get("API_URL", "https://devbox.42web.io/worker_api.php")
+PORT = 8080
+MAX_SLOTS = 20
 
-r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASS, decode_responses=True)
-
-MAX_SLOTS = 10
 active_sessions = {}
-lock = threading.Lock()
+worker_url = None
 
-def bash_worker(session_id):
-    # Fetch session info
-    status = r.hget(f"devbox:session:{session_id}", "status")
-    username = r.hget(f"devbox:session:{session_id}", "username")
-    timeout_secs = int(r.hget(f"devbox:session:{session_id}", "timeout_secs") or 1800)
-    
-    r.hset(f"devbox:session:{session_id}", "status", "active")
-    r.hset(f"devbox:session:{session_id}", "started_at", int(time.time()))
-    
-    home_dir = f"/home/{username}"
-    os.makedirs(home_dir, exist_ok=True)
-    
-    master_fd, slave_fd = pty.openpty()
-    
-    env = os.environ.copy()
-    env["HOME"] = home_dir
-    env["USER"] = username
-    
-    p = subprocess.Popen(
-        ["/bin/bash"],
-        stdin=subprocess.PIPE,
-        stdout=slave_fd,
-        stderr=slave_fd,
-        cwd=home_dir,
-        env=env,
-        text=True,
-        bufsize=1
+def api_call(op, payload=None):
+    try:
+        if payload is None:
+            payload = {}
+        payload['op'] = op
+        data = json.dumps(payload).encode('utf-8')
+        req = request.Request(API_URL, data=data, headers={'Content-Type': 'application/json'})
+        with request.urlopen(req, timeout=10) as response:
+            return json.loads(response.read().decode('utf-8'))
+    except Exception as e:
+        print(f"API Error ({op}): {e}")
+        return {"status": "error"}
+
+def start_tunnel():
+    global worker_url
+    print("Starting cloudflared tunnel...")
+    tunnel_proc = subprocess.Popen(
+        ["cloudflared", "tunnel", "--url", f"http://localhost:{PORT}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True
     )
-    
-    os.close(slave_fd)
-    
-    queue_name = f"devbox:session:{session_id}:queue"
-    start_time = time.time()
+    for line in tunnel_proc.stdout:
+        print(f"[TUNNEL] {line.strip()}")
+        match = re.search(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com', line)
+        if match:
+            url = match.group(0)
+            worker_url = url.replace("https://", "wss://")
+            print(f"Tunnel established: {worker_url}")
+            break
+
+async def job_poller():
+    global worker_url
+    while worker_url is None:
+        await asyncio.sleep(1)
+        
+    print("Starting job poller...")
+    while True:
+        try:
+            current_time = time.time()
+            to_remove = []
+            for sid, sdata in active_sessions.items():
+                if current_time - sdata["start_time"] > sdata["timeout_secs"]:
+                    print(f"Session {sid} timed out.")
+                    to_remove.append(sid)
+            for sid in to_remove:
+                close_session(sid)
+            
+            if len(active_sessions) < MAX_SLOTS:
+                res = api_call("get_job")
+                if res.get('status') == 'success':
+                    session_id = res['session_id']
+                    plan = res.get('plan', 'free')
+                    timeout_secs = int(res.get('timeout_secs', 1800))
+                    
+                    print(f"Claimed job {session_id} (Plan: {plan})")
+                    
+                    active_sessions[session_id] = {
+                        "plan": plan,
+                        "timeout_secs": timeout_secs,
+                        "start_time": time.time(),
+                        "proc": None,
+                        "master_fd": None,
+                        "ws": None
+                    }
+                    
+                    api_call("update_status", {
+                        "session_id": session_id,
+                        "status": "active",
+                        "worker_url": worker_url
+                    })
+        except Exception as e:
+            print(f"Poller error: {e}")
+        
+        await asyncio.sleep(3)
+
+def close_session(session_id):
+    if session_id in active_sessions:
+        sdata = active_sessions[session_id]
+        if sdata.get("proc"):
+            sdata["proc"].terminate()
+        if sdata.get("master_fd"):
+            os.close(sdata["master_fd"])
+        del active_sessions[session_id]
+        api_call("update_status", {"session_id": session_id, "status": "closed"})
+
+def get_dir_size(path):
+    total = 0
+    try:
+        for dirpath, _, filenames in os.walk(path):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                if not os.path.islink(fp):
+                    total += os.path.getsize(fp)
+    except:
+        pass
+    return total / (1024 * 1024)
+
+async def handle_client(websocket):
+    print("Client connected!")
+    session_id = None
     
     try:
-        while True:
-            # Check session timeout
-            if time.time() - start_time > timeout_secs:
-                break
-                
-            # Pop cell command with 1s timeout
-            item = r.blpop(queue_name, timeout=1)
-            if not item:
-                # No command, keep alive
-                continue
-                
-            # We got a command
-            payload = json.loads(item[1])
-            cell_id = payload['cell_id']
-            code = payload['code']
+        auth_msg = await websocket.recv()
+        auth_data = json.loads(auth_msg)
+        if auth_data.get('type') != 'auth' or auth_data.get('session_id') not in active_sessions:
+            await websocket.send(json.dumps({"type": "error", "message": "Invalid auth"}))
+            return
             
-            output_chan = f"devbox:output:{session_id}:{cell_id}"
+        session_id = auth_data['session_id']
+        sdata = active_sessions[session_id]
+        sdata["ws"] = websocket
+        
+        print(f"Auth successful for {session_id}")
+        
+        home_dir = f"/home/devbox_{session_id[:8]}"
+        os.makedirs(home_dir, exist_ok=True)
+        
+        nice_val = 15
+        ram_bytes = 4 * 1024 * 1024 * 1024
+        disk_limit_mb = 500
+        
+        if sdata["plan"] == "pro":
+            nice_val = 5
+            ram_bytes = 8 * 1024 * 1024 * 1024
+            disk_limit_mb = 1024
+        elif sdata["plan"] == "developer":
+            nice_val = 0
+            ram_bytes = 16 * 1024 * 1024 * 1024
+            disk_limit_mb = 3072
             
-            # Magic string to detect end of command
-            magic = f"__DEVBOX_EOF_{cell_id}__"
+        master_fd, slave_fd = pty.openpty()
+        env = os.environ.copy()
+        env["HOME"] = home_dir
+        env["USER"] = f"devbox_{session_id[:8]}"
+        
+        cmd = ["prlimit", f"--as={ram_bytes}", "nice", f"-n{nice_val}", "/bin/bash"]
+        try:
+            p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=slave_fd, stderr=slave_fd, cwd=home_dir, env=env, text=True, bufsize=1)
+        except FileNotFoundError:
+            p = subprocess.Popen(["nice", f"-n{nice_val}", "/bin/bash"], stdin=subprocess.PIPE, stdout=slave_fd, stderr=slave_fd, cwd=home_dir, env=env, text=True, bufsize=1)
             
-            # Send code and magic echo to bash
-            full_cmd = f"{code}\necho '{magic}'\n"
-            p.stdin.write(full_cmd)
-            p.stdin.flush()
-            
-            # Read output until magic string
-            buffer = ""
-            while True:
-                rlist, _, _ = select.select([master_fd], [], [], 0.1)
-                if rlist:
-                    chunk = os.read(master_fd, 1024).decode('utf-8', errors='replace')
-                    if not chunk:
-                        break
-                    
-                    buffer += chunk
-                    
-                    # Split by newline and publish
-                    lines = buffer.split('\n')
-                    # Keep the last incomplete line in buffer
-                    buffer = lines.pop()
-                    
-                    for line in lines:
-                        clean_line = line.replace('\r', '')
-                        if magic in clean_line:
-                            break # cell done
-                        
-                        r.publish(output_chan, clean_line)
-                    
-                    if magic in buffer:
-                        break
-                        
-            # Publish EOF to let client know cell finished
-            r.publish(output_chan, "[[EOF]]")
-            
-    except Exception as e:
-        print(f"Error in session {session_id}: {e}")
-    finally:
-        p.terminate()
-        os.close(master_fd)
-        r.hset(f"devbox:session:{session_id}", "status", "expired")
-        with lock:
-            if session_id in active_sessions:
-                del active_sessions[session_id]
+        os.close(slave_fd)
+        sdata["proc"] = p
+        sdata["master_fd"] = master_fd
 
+        async def disk_monitor():
+            while p.poll() is None:
+                size_mb = get_dir_size(home_dir)
+                if size_mb > disk_limit_mb:
+                    try:
+                        await websocket.send(json.dumps({"type": "message", "data": f"\n\n[SYSTEM] Disk Quota Exceeded ({disk_limit_mb}MB). Terminating process.\n"}))
+                        p.terminate()
+                    except:
+                        pass
+                    break
+                await asyncio.sleep(10)
+                
+        asyncio.create_task(disk_monitor())
+        
+        async def read_bash_output():
+            try:
+                while p.poll() is None:
+                    rlist, _, _ = select.select([master_fd], [], [], 0.1)
+                    if rlist:
+                        chunk = os.read(master_fd, 4096).decode('utf-8', errors='replace')
+                        if chunk:
+                            await websocket.send(json.dumps({"type": "message", "data": chunk}))
+                    await asyncio.sleep(0.01)
+            except Exception as e:
+                pass
+                
+        reader_task = asyncio.create_task(read_bash_output())
+        
+        async for message in websocket:
+            data = json.loads(message)
+            msg_type = data.get('type')
+            
+            if msg_type == 'command':
+                cell_id = data.get('cell_id', '')
+                magic = f"__DEVBOX_EOF_{cell_id}__"
+                cmd_str = data.get('command', '') + f"\necho '{magic}'\n"
+                p.stdin.write(cmd_str)
+                p.stdin.flush()
+                
+            elif msg_type == 'list_dir':
+                path = data.get('path', '/')
+                full_path = os.path.abspath(os.path.join(home_dir, path.lstrip('/')))
+                if not full_path.startswith(home_dir):
+                    await websocket.send(json.dumps({"type": "file_error", "message": "Access denied"}))
+                    continue
+                try:
+                    items = []
+                    if os.path.exists(full_path):
+                        for f in os.listdir(full_path):
+                            f_path = os.path.join(full_path, f)
+                            items.append({"name": f, "is_dir": os.path.isdir(f_path)})
+                    await websocket.send(json.dumps({"type": "dir_list", "path": path, "items": items}))
+                except Exception as e:
+                    await websocket.send(json.dumps({"type": "file_error", "message": str(e)}))
+                    
+            elif msg_type == 'read_file':
+                path = data.get('path', '')
+                full_path = os.path.abspath(os.path.join(home_dir, path.lstrip('/')))
+                if not full_path.startswith(home_dir) or not os.path.isfile(full_path):
+                    continue
+                try:
+                    with open(full_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    await websocket.send(json.dumps({"type": "file_content", "path": path, "content": content}))
+                except Exception as e:
+                    await websocket.send(json.dumps({"type": "file_error", "message": str(e)}))
+                    
+            elif msg_type == 'write_file':
+                path = data.get('path', '')
+                content = data.get('content', '')
+                full_path = os.path.abspath(os.path.join(home_dir, path.lstrip('/')))
+                if not full_path.startswith(home_dir):
+                    continue
+                try:
+                    with open(full_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    await websocket.send(json.dumps({"type": "file_saved", "path": path}))
+                except Exception as e:
+                    await websocket.send(json.dumps({"type": "file_error", "message": str(e)}))
+                    
+            elif msg_type == 'create_folder':
+                path = data.get('path', '')
+                full_path = os.path.abspath(os.path.join(home_dir, path.lstrip('/')))
+                if full_path.startswith(home_dir):
+                    os.makedirs(full_path, exist_ok=True)
+                    
+            elif msg_type == 'delete_item':
+                path = data.get('path', '')
+                full_path = os.path.abspath(os.path.join(home_dir, path.lstrip('/')))
+                if full_path.startswith(home_dir):
+                    if os.path.isdir(full_path):
+                        shutil.rmtree(full_path, ignore_errors=True)
+                    else:
+                        try:
+                            os.remove(full_path)
+                        except:
+                            pass
+                            
+    except websockets.exceptions.ConnectionClosed:
+        print(f"Client {session_id} disconnected")
+    except Exception as e:
+        print(f"Handler error: {e}")
+    finally:
+        if session_id and session_id in active_sessions:
+            active_sessions[session_id]["ws"] = None
+
+async def main_loop():
+    server = await websockets.serve(handle_client, "0.0.0.0", PORT)
+    print(f"WebSocket server started on port {PORT}")
+    asyncio.create_task(job_poller())
+    await asyncio.Future()
 
 def main():
-    print("DevBox Runner Started")
-    runner_id = os.environ.get("RUNNER_ID", "1")
-    alive_key = f"devbox:runner:{runner_id}:alive"
-    
-    start_time = time.time()
-    MAX_LIFETIME = 5.5 * 3600 # 5.5 hours to be safe within GitHub 6h limit
-    
-    while time.time() - start_time < MAX_LIFETIME:
-        r.setex(alive_key, 60, "1")
-        
-        with lock:
-            current_slots = len(active_sessions)
-            
-        r.set(f"devbox:runner:{runner_id}:slots_used", current_slots)
-        
-        if current_slots < MAX_SLOTS:
-            # Try priority queue first
-            item = r.lpop("devbox:queue:priority")
-            if not item:
-                item = r.lpop("devbox:queue:normal")
-                
-            if item:
-                session_id = item
-                with lock:
-                    active_sessions[session_id] = True
-                
-                t = threading.Thread(target=bash_worker, args=(session_id,), daemon=True)
-                t.start()
-            else:
-                time.sleep(2) # no jobs
-        else:
-            time.sleep(5) # full slots
+    print("DevBox Multi-Tenant Runner Started")
+    threading.Thread(target=start_tunnel, daemon=True).start()
+    asyncio.run(main_loop())
 
 if __name__ == "__main__":
     main()
