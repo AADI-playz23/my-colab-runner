@@ -16,12 +16,15 @@ jobs:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install redis
+        run: pip install websockets
+
+      - name: Install Cloudflared
+        run: |
+          wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared-linux-amd64.deb
 
       - name: Start Runner
         env:
-          REDIS_HOST: ${{ secrets.REDIS_HOST }}
-          REDIS_PORT: ${{ secrets.REDIS_PORT }}
-          REDIS_PASS: ${{ secrets.REDIS_PASS }}
+          API_URL: "https://devbox.42web.io/worker_api.php"
           RUNNER_ID: ${{ github.run_id }}
         run: python runner.py
