@@ -27,4 +27,5 @@ jobs:
         env:
           API_URL: "https://devbox.42web.io/worker_api.php"
           RUNNER_ID: ${{ github.run_id }}
+          PYTHONUNBUFFERED: "1"
         run: python runner.py
