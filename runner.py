@@ -10,23 +10,39 @@ import websockets
 import re
 import shutil
 from urllib import request, parse
-import redis
 
-REDIS_HOST = os.environ.get("REDIS_HOST", "blooming-glove-existence-12929.db.redis.io")
-REDIS_PORT = int(os.environ.get("REDIS_PORT", "11619"))
-REDIS_PASS = os.environ.get("REDIS_PASS", "RzhVwv9LrOuQI9wNpO2IdRKVynCVQO6Z")
-
+API_URL = os.environ.get("API_URL", "https://devbox.42web.io/worker_api.php")
+RUNNER_ID = os.environ.get("RUNNER_ID", "local_runner")
 PORT = 8080
 MAX_SLOTS = 20
 
 active_sessions = {}
 worker_url = None
 
-redis_client = None
-try:
-    redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASS, decode_responses=True)
-except Exception as e:
-    print(f"Redis connection failed: {e}")
+def api_call(op, payload=None):
+    try:
+        if payload is None:
+            payload = {}
+        payload['op'] = op
+        data = json.dumps(payload).encode('utf-8')
+        req = request.Request(API_URL, data=data, headers={'Content-Type': 'application/json'})
+        with request.urlopen(req, timeout=10) as response:
+            return json.loads(response.read().decode('utf-8'))
+    except Exception as e:
+        print(f"API Error ({op}): {e}")
+        return {"status": "error"}
+
+def heartbeat_loop():
+    print("Started heartbeat loop")
+    while True:
+        try:
+            api_call("vm_heartbeat", {
+                "vm_id": RUNNER_ID,
+                "active_users": len(active_sessions)
+            })
+        except:
+            pass
+        time.sleep(30)
 
 def start_tunnel():
     global worker_url
@@ -44,61 +60,16 @@ def start_tunnel():
             url = match.group(0)
             worker_url = url.replace("https://", "wss://")
             print(f"Tunnel established: {worker_url}")
-            break
-
-async def job_poller():
-    global worker_url
-    while worker_url is None:
-        await asyncio.sleep(1)
-        
-    print("Starting Redis job poller...")
-    while True:
-        try:
-            current_time = time.time()
-            to_remove = []
-            for sid, sdata in active_sessions.items():
-                if current_time - sdata["start_time"] > sdata["timeout_secs"]:
-                    print(f"Session {sid} timed out.")
-                    to_remove.append(sid)
-            for sid in to_remove:
-                close_session(sid)
             
-            if len(active_sessions) < MAX_SLOTS and redis_client:
-                job_json = redis_client.lpop("devbox_queue")
-                if job_json:
-                    job = json.loads(job_json)
-                    session_id = job.get('session_id')
-                    plan = job.get('plan', 'free')
-                    timeout_secs = int(job.get('timeout_secs', 1800))
-                    
-                    print(f"Claimed job {session_id} (Plan: {plan})")
-                    
-                    active_sessions[session_id] = {
-                        "plan": plan,
-                        "timeout_secs": timeout_secs,
-                        "start_time": time.time(),
-                        "proc": None,
-                        "master_fd": None,
-                        "ws": None
-                    }
-                    
-                    # Announce URL
-                    redis_client.setex(f"devbox_url:{session_id}", timeout_secs, worker_url)
-        except Exception as e:
-            print(f"Poller error: {e}")
-        
-        await asyncio.sleep(2)
-
-def close_session(session_id):
-    if session_id in active_sessions:
-        sdata = active_sessions[session_id]
-        if sdata.get("proc"):
-            sdata["proc"].terminate()
-        if sdata.get("master_fd"):
-            os.close(sdata["master_fd"])
-        del active_sessions[session_id]
-        if redis_client:
-            redis_client.delete(f"devbox_url:{session_id}")
+            # Register VM with the Backend
+            api_call("register_vm", {
+                "vm_id": RUNNER_ID,
+                "worker_url": worker_url
+            })
+            
+            # Start Heartbeat thread
+            threading.Thread(target=heartbeat_loop, daemon=True).start()
+            break
 
 def get_dir_size(path):
     total = 0
@@ -119,13 +90,26 @@ async def handle_client(websocket):
     try:
         auth_msg = await websocket.recv()
         auth_data = json.loads(auth_msg)
-        if auth_data.get('type') != 'auth' or auth_data.get('session_id') not in active_sessions:
+        if auth_data.get('type') != 'auth':
             await websocket.send(json.dumps({"type": "error", "message": "Invalid auth"}))
             return
             
         session_id = auth_data['session_id']
-        sdata = active_sessions[session_id]
-        sdata["ws"] = websocket
+        plan = auth_data.get('plan', 'free')
+        timeout_secs = int(auth_data.get('timeout', 1800))
+        
+        # Inactivity tracking
+        last_activity = time.time()
+        
+        # Enforce Max Slots
+        if len(active_sessions) >= MAX_SLOTS and session_id not in active_sessions:
+            await websocket.send(json.dumps({"type": "error", "message": "VM Full"}))
+            return
+            
+        active_sessions[session_id] = {
+            "ws": websocket,
+            "last_activity": last_activity
+        }
         
         print(f"Auth successful for {session_id}")
         
@@ -136,11 +120,11 @@ async def handle_client(websocket):
         ram_bytes = 4 * 1024 * 1024 * 1024
         disk_limit_mb = 500
         
-        if sdata["plan"] == "pro":
+        if plan == "pro":
             nice_val = 5
             ram_bytes = 8 * 1024 * 1024 * 1024
             disk_limit_mb = 1024
-        elif sdata["plan"] == "developer":
+        elif plan == "developer":
             nice_val = 0
             ram_bytes = 16 * 1024 * 1024 * 1024
             disk_limit_mb = 3072
@@ -157,10 +141,8 @@ async def handle_client(websocket):
             p = subprocess.Popen(["nice", f"-n{nice_val}", "/bin/bash"], stdin=subprocess.PIPE, stdout=slave_fd, stderr=slave_fd, cwd=home_dir, env=env, text=True, bufsize=1)
             
         os.close(slave_fd)
-        sdata["proc"] = p
-        sdata["master_fd"] = master_fd
 
-        async def disk_monitor():
+        async def resource_monitor():
             while p.poll() is None:
                 size_mb = get_dir_size(home_dir)
                 if size_mb > disk_limit_mb:
@@ -170,9 +152,29 @@ async def handle_client(websocket):
                     except:
                         pass
                     break
-                await asyncio.sleep(10)
                 
-        asyncio.create_task(disk_monitor())
+                # Check Inactivity (3 minutes = 180 seconds)
+                if time.time() - active_sessions.get(session_id, {}).get("last_activity", time.time()) > 180:
+                    try:
+                        await websocket.send(json.dumps({"type": "message", "data": f"\n\n[SYSTEM] Session terminated due to 3 minutes of inactivity.\n"}))
+                        p.terminate()
+                    except:
+                        pass
+                    break
+                    
+                # Send Usage Update
+                try:
+                    await websocket.send(json.dumps({
+                        "type": "usage",
+                        "disk_mb": round(size_mb, 2),
+                        "disk_max_mb": disk_limit_mb
+                    }))
+                except:
+                    pass
+                    
+                await asyncio.sleep(5)
+                
+        asyncio.create_task(resource_monitor())
         
         async def read_bash_output():
             try:
@@ -186,9 +188,10 @@ async def handle_client(websocket):
             except Exception as e:
                 pass
                 
-        reader_task = asyncio.create_task(read_bash_output())
+        asyncio.create_task(read_bash_output())
         
         async for message in websocket:
+            active_sessions[session_id]["last_activity"] = time.time()
             data = json.loads(message)
             msg_type = data.get('type')
             
@@ -264,12 +267,16 @@ async def handle_client(websocket):
         print(f"Handler error: {e}")
     finally:
         if session_id and session_id in active_sessions:
-            active_sessions[session_id]["ws"] = None
+            del active_sessions[session_id]
+            try:
+                p.terminate()
+                os.close(master_fd)
+            except:
+                pass
 
 async def main_loop():
     server = await websockets.serve(handle_client, "0.0.0.0", PORT)
     print(f"WebSocket server started on port {PORT}")
-    asyncio.create_task(job_poller())
     await asyncio.Future()
 
 def main():
