@@ -16,7 +16,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install websockets redis
+        run: pip install websockets
 
       - name: Install Cloudflared
         run: |
@@ -25,9 +25,7 @@ jobs:
 
       - name: Start Runner
         env:
-          REDIS_HOST: "blooming-glove-existence-12929.db.redis.io"
-          REDIS_PORT: "11619"
-          REDIS_PASS: "RzhVwv9LrOuQI9wNpO2IdRKVynCVQO6Z"
+          API_URL: "https://devbox.42web.io/worker_api.php"
           RUNNER_ID: ${{ github.run_id }}
           PYTHONUNBUFFERED: "1"
         run: python runner.py
