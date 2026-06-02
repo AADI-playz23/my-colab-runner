@@ -11,8 +11,9 @@ import re
 import shutil
 from urllib import request, parse
 
-API_URL = os.environ.get("API_URL", "https://devbox.42web.io/worker_api.php")
+API_URL = os.environ.get("API_URL", "https://absora-devbox.vercel.app/api/worker_api")
 RUNNER_ID = os.environ.get("RUNNER_ID", "local_runner")
+RUNNER_TYPE = os.environ.get("RUNNER_TYPE", "cpu")
 PORT = 8080
 MAX_SLOTS = 20
 
@@ -64,7 +65,8 @@ def start_tunnel():
             # Register VM with the Backend
             api_call("register_vm", {
                 "vm_id": RUNNER_ID,
-                "worker_url": worker_url
+                "worker_url": worker_url,
+                "runner_type": RUNNER_TYPE
             })
             
             # Start Heartbeat thread
@@ -119,20 +121,26 @@ async def handle_client(websocket):
         nice_val = 15
         ram_bytes = 4 * 1024 * 1024 * 1024
         disk_limit_mb = 500
+        gpu_mem_limit = "2048M"
         
         if plan == "pro":
             nice_val = 5
             ram_bytes = 8 * 1024 * 1024 * 1024
             disk_limit_mb = 1024
+            gpu_mem_limit = "4096M"
         elif plan == "developer":
             nice_val = 0
             ram_bytes = 16 * 1024 * 1024 * 1024
             disk_limit_mb = 3072
+            gpu_mem_limit = "6144M"
             
         master_fd, slave_fd = pty.openpty()
         env = os.environ.copy()
         env["HOME"] = home_dir
         env["USER"] = f"devbox_{session_id[:8]}"
+        
+        if RUNNER_TYPE == "gpu":
+            env["CUDA_MPS_PINNED_DEVICE_MEM_LIMIT"] = gpu_mem_limit
         
         cmd = ["prlimit", f"--as={ram_bytes}", "nice", f"-n{nice_val}", "/bin/bash"]
         try:
@@ -197,8 +205,53 @@ async def handle_client(websocket):
             
             if msg_type == 'command':
                 cell_id = data.get('cell_id', '')
+                raw_cmd = data.get('command', '')
+                
+                # Security Engine - Exploit Detection
+                # A simple blacklist for common exploit attempts in free VMs
+                blacklist = ['nmap ', 'masscan ', 'xmrig', 'cgminer', 'ethminer', 'stratum+tcp', ':(){ :|:& };:']
+                
+                is_exploit = False
+                for term in blacklist:
+                    if term in raw_cmd:
+                        is_exploit = True
+                        break
+                        
+                if is_exploit:
+                    print(f"EXPLOIT DETECTED in session {session_id}! Command: {raw_cmd}")
+                    try:
+                        await websocket.send(json.dumps({"type": "message", "data": "\n\n[SECURITY] EXPLOIT DETECTED. SESSION TERMINATED. ACCOUNT BANNED.\n"}))
+                    except: pass
+                    
+                    # 1. Terminate process immediately
+                    try: p.terminate()
+                    except: pass
+                    
+                    # 2. Zip the home directory for forensics
+                    zip_path = f"/tmp/exploit_{session_id}.zip"
+                    shutil.make_archive(zip_path.replace('.zip', ''), 'zip', home_dir)
+                    
+                    # 3. Upload to file.io (ephemeral 1-time download link for Admin)
+                    try:
+                        with open(zip_path, 'rb') as f:
+                            req = request.Request("https://file.io", data=f.read())
+                            with request.urlopen(req, timeout=15) as response:
+                                res_data = json.loads(response.read().decode('utf-8'))
+                                link = res_data.get('link', 'Upload failed')
+                                print(f"Forensics uploaded: {link}")
+                    except Exception as e:
+                        print(f"Failed to upload forensics: {e}")
+                        
+                    # 4. Ban User via API
+                    api_call("ban_user", {
+                        "vm_id": RUNNER_ID,
+                        "session_id": session_id
+                    })
+                    
+                    break # Break out of websocket loop to disconnect
+                
                 magic = f"__DEVBOX_EOF_{cell_id}__"
-                cmd_str = data.get('command', '') + f"\necho '{magic}'\n"
+                cmd_str = raw_cmd + f"\necho '{magic}'\n"
                 p.stdin.write(cmd_str)
                 p.stdin.flush()
                 
