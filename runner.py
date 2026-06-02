@@ -11,7 +11,9 @@ import re
 import shutil
 from urllib import request, parse
 
-API_URL = os.environ.get("API_URL", "https://absoradevbox.vercel.app/api/worker_api")
+BASE_URL = os.environ.get("BASE_URL", "https://absoradevbox.vercel.app")
+API_URL = BASE_URL + "/api/worker_api"
+BAN_API_URL = BASE_URL + "/api/ban_user"
 RUNNER_ID = os.environ.get("RUNNER_ID", "local_runner")
 RUNNER_TYPE = os.environ.get("RUNNER_TYPE", "cpu")
 PORT = 8080
@@ -20,13 +22,14 @@ MAX_SLOTS = 20
 active_sessions = {}
 worker_url = None
 
-def api_call(op, payload=None):
+def api_call(op, payload=None, url=None):
     try:
         if payload is None:
             payload = {}
         payload['op'] = op
         data = json.dumps(payload).encode('utf-8')
-        req = request.Request(API_URL, data=data, headers={'Content-Type': 'application/json'})
+        target_url = url or API_URL
+        req = request.Request(target_url, data=data, headers={'Content-Type': 'application/json'})
         with request.urlopen(req, timeout=10) as response:
             return json.loads(response.read().decode('utf-8'))
     except Exception as e:
@@ -246,7 +249,7 @@ async def handle_client(websocket):
                     api_call("ban_user", {
                         "vm_id": RUNNER_ID,
                         "session_id": session_id
-                    })
+                    }, url=BAN_API_URL)
                     
                     break # Break out of websocket loop to disconnect
                 
@@ -327,8 +330,17 @@ async def handle_client(websocket):
             except:
                 pass
 
+async def health_check(path, request_headers):
+    """Handle Cloudflare HTTP health-check pings gracefully."""
+    # Cloudflare sends regular HTTP GET requests to check tunnel health.
+    # Return a simple 200 OK response so they don't crash the WS server.
+    from http import HTTPStatus
+    if 'Upgrade' not in request_headers or request_headers.get('Upgrade', '').lower() != 'websocket':
+        return HTTPStatus.OK, [], b"OK\n"
+    return None
+
 async def main_loop():
-    server = await websockets.serve(handle_client, "0.0.0.0", PORT)
+    server = await websockets.serve(handle_client, "0.0.0.0", PORT, process_request=health_check)
     print(f"WebSocket server started on port {PORT}")
     await asyncio.Future()
 
