@@ -105,6 +105,8 @@
             border-radius: 10px; 
             overflow: hidden; 
             transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.4);
         }
         .cell:focus-within {
             box-shadow: 0 0 0 1px rgba(56, 139, 253, 0.5), 0 8px 24px rgba(0,0,0,0.3);
@@ -124,9 +126,10 @@
         .cell-input textarea { 
             width: 100%; 
             min-height: 105px; 
-            background: rgba(0, 0, 0, 0.3); 
+            background: #0d1117; 
             color: #e6edf3; 
-            border: none; 
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.07);
             padding: 15px; 
             font-family: 'Consolas', 'Courier New', monospace; 
             font-size: 14px;
@@ -134,6 +137,10 @@
             box-sizing: border-box; 
             outline: none; 
             line-height: 1.5;
+            display: block;
+        }
+        .cell-input textarea::placeholder {
+            color: rgba(139, 148, 158, 0.5);
         }
         .cell-output { 
             background: #010409; 
@@ -142,7 +149,7 @@
             font-family: 'Consolas', 'Courier New', monospace; 
             white-space: pre-wrap; 
             word-wrap: break-word; 
-            border-top: 1px solid rgba(255,255,255,0.1); 
+            border-top: 1px solid rgba(57, 211, 83, 0.2); 
             font-size: 13px;
             line-height: 1.4;
             max-height: 364px;
