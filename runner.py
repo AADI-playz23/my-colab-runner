@@ -142,10 +142,18 @@ async def handle_client(websocket):
         
         if sys.platform == "win32":
             home_dir = os.path.abspath(f"./home/devbox_{session_id[:8]}")
+            os.makedirs(home_dir, exist_ok=True)
         else:
             home_dir = f"/home/devbox_{session_id[:8]}"
-            
-        os.makedirs(home_dir, exist_ok=True)
+            try:
+                os.makedirs(home_dir, exist_ok=True)
+            except PermissionError:
+                try:
+                    subprocess.run(["sudo", "mkdir", "-p", home_dir], check=True)
+                    subprocess.run(["sudo", "chown", f"{os.getuid()}:{os.getgid()}", home_dir], check=True)
+                except Exception:
+                    home_dir = os.path.abspath(f"./home/devbox_{session_id[:8]}")
+                    os.makedirs(home_dir, exist_ok=True)
         
         nice_val = 15
         ram_bytes = 4 * 1024 * 1024 * 1024
