@@ -63,9 +63,9 @@
     }
 
     async function runTests() {
-        testEndpoint('/api/test_db', 'status-db');
-        testEndpoint('/api/test_kv', 'status-kv');
-        testEndpoint('/api/test_github', 'status-github');
+        testEndpoint('/api/test_connections?type=db', 'status-db');
+        testEndpoint('/api/test_connections?type=kv', 'status-kv');
+        testEndpoint('/api/test_connections?type=github', 'status-github');
     }
 </script>
 

@@ -13,11 +13,20 @@
         .status.queued { background: #d29922; color: black; }
         .status.error { background: #da3633; color: white; }
         
-        .toolbar { padding: 10px 20px; background: #161b22; border-bottom: 1px solid #30363d; display: flex; gap: 10px; }
+        .toolbar { padding: 10px 20px; background: #161b22; border-bottom: 1px solid #30363d; display: flex; gap: 10px; align-items: center; }
         .btn { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .btn:hover { background: #30363d; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn:disabled:hover { background: #21262d; }
         .btn-run { background: #238636; color: white; border: none; }
         .btn-run:hover { background: #2ea043; }
+        .btn-run:disabled { background: #1a6b2b; }
+        .btn-run:disabled:hover { background: #1a6b2b; }
+        .btn-connect { background: #1f6feb; color: white; border: none; }
+        .btn-connect:hover { background: #388bfd; }
+        .btn-disconnect { background: #da3633; color: white; border: none; }
+        .btn-disconnect:hover { background: #f85149; }
+        .toolbar-separator { width: 1px; height: 24px; background: #30363d; margin: 0 4px; }
         
         .main-container { display: flex; flex: 1; overflow: hidden; }
         
@@ -53,12 +62,15 @@
             <span id="plan-badge" class="status" style="margin-right: 15px; background: #1f6feb; display: none;"></span>
             <span id="usage-stats" style="margin-right: 15px; font-family: monospace; color: #8b949e; display: none;"></span>
             <span id="session-timer" style="margin-right: 15px; font-family: monospace;"></span>
-            <span class="status" id="status-badge">Connecting...</span>
+            <span class="status" id="status-badge">Not Connected</span>
             <button onclick="window.location.href='dashboard.html'" style="margin-left: 15px; background: #21262d; border: 1px solid #30363d; color: #c9d1d9; border-radius: 4px; padding: 2px 10px; cursor: pointer;">Exit</button>
         </div>
     </div>
     
     <div class="toolbar">
+        <button class="btn btn-connect" onclick="startSession()" id="btn-connect">⚡ Connect to Runtime</button>
+        <button class="btn btn-disconnect" onclick="disconnectSession()" id="btn-disconnect" style="display: none;">⏹ Disconnect</button>
+        <div class="toolbar-separator"></div>
         <button class="btn" onclick="addCell()">+ Add Bash Cell</button>
         <button class="btn btn-run" onclick="runAllCells()" id="btn-run-all">▶ Run All</button>
         <button class="btn" onclick="saveNotebook()">Save Notebook</button>
@@ -76,7 +88,7 @@
                 </div>
             </div>
             <div class="file-tree" id="file-tree">
-                <div style="padding: 10px; color: #8b949e; font-size: 12px; text-align: center;">Waiting for VM...</div>
+                <div style="padding: 20px 10px; color: #8b949e; font-size: 12px; text-align: center;">Connect to a runtime to browse files</div>
             </div>
         </div>
 
@@ -112,6 +124,7 @@
         let sessionTimeoutSecs = 0;
         let sessionStartedAt = null;
         let workerWs = null;
+        let isConnecting = false;
         
         let activeCellId = null;
         let runQueue = [];
@@ -173,6 +186,10 @@
             saveNotebook();
         }
 
+        function isRuntimeConnected() {
+            return sessionId && workerWs && workerWs.readyState === WebSocket.OPEN;
+        }
+
         function renderCells() {
             const container = document.getElementById('cells-container');
             container.innerHTML = '';
@@ -198,12 +215,14 @@
         }
 
         function runCell(cellId) {
-            if (!sessionId || document.getElementById('status-badge').className.includes('queued') || !workerWs) {
-                alert("Session is not active yet or VM is booting!");
+            if (!isRuntimeConnected()) {
+                alert("Not connected to a runtime. Click '⚡ Connect to Runtime' first.");
                 return;
             }
             saveNotebook();
             const cell = notebook.cells.find(c => c.id === cellId);
+            if (!cell || !cell.code.trim()) return;
+            
             const outDiv = document.getElementById('out_' + cellId);
             outDiv.style.display = 'block';
             outDiv.innerText = 'Running...\n';
@@ -217,12 +236,13 @@
         }
 
         function runAllCells() {
-            if (!sessionId || !workerWs) {
-                alert("VM is not ready yet!");
+            if (!isRuntimeConnected()) {
+                alert("Not connected to a runtime. Click '⚡ Connect to Runtime' first.");
                 return;
             }
             saveNotebook();
-            runQueue = notebook.cells.map(c => c.id);
+            runQueue = notebook.cells.filter(c => c.code.trim()).map(c => c.id);
+            if (runQueue.length === 0) return;
             if (!isRunningQueue) {
                 processRunQueue();
             }
@@ -240,6 +260,25 @@
             runCell(cellId);
         }
 
+        // ---------- UI State Helpers ----------
+
+        function setConnectedUI() {
+            document.getElementById('btn-connect').style.display = 'none';
+            document.getElementById('btn-disconnect').style.display = '';
+        }
+
+        function setDisconnectedUI() {
+            document.getElementById('btn-connect').style.display = '';
+            document.getElementById('btn-connect').innerText = '⚡ Connect to Runtime';
+            document.getElementById('btn-connect').disabled = false;
+            document.getElementById('btn-disconnect').style.display = 'none';
+
+            document.getElementById('session-timer').innerText = '';
+            document.getElementById('usage-stats').style.display = 'none';
+            document.getElementById('file-tree').innerHTML = '<div style="padding: 20px 10px; color: #8b949e; font-size: 12px; text-align: center;">Connect to a runtime to browse files</div>';
+            isConnecting = false;
+        }
+
         // ---------- Session Logic ----------
 
         function updateStatus(status, text) {
@@ -249,17 +288,24 @@
         }
 
         async function startSession() {
+            if (isConnecting) return;
+            isConnecting = true;
+            
+            const connectBtn = document.getElementById('btn-connect');
+            connectBtn.innerText = '⏳ Connecting...';
+            connectBtn.disabled = true;
             updateStatus('', 'Starting...');
-            const runtime_type = document.getElementById('runtime-select') ? document.getElementById('runtime-select').value : 'cpu';
+            
             try {
                 const res = await fetch('/api/start_session', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, runtime_type })
+                    body: JSON.stringify({ username })
                 }).then(r => r.json());
 
                 if (res.status === 'error') {
                     updateStatus('error', res.message);
+                    setDisconnectedUI();
                     return;
                 }
 
@@ -267,16 +313,39 @@
                 sessionTimeoutSecs = res.session_limit_mins * 60;
                 
                 if (res.status === 'active' && res.worker_url) {
-                    if (!workerWs) connectWorker(res.worker_url);
+                    connectWorker(res.worker_url);
                     updateStatus('active', 'Online');
-                    sessionStartedAt = Math.floor(Date.now() / 1000);
+                    sessionStartedAt = res.started_at || Math.floor(Date.now() / 1000);
                     startTimer();
+                    setConnectedUI();
                 } else {
+                    updateStatus('queued', res.status === 'booting' ? 'Booting VM...' : 'In Queue...');
                     pollSessionStatus();
                 }
             } catch (e) {
                 updateStatus('error', 'Failed to connect');
+                setDisconnectedUI();
             }
+        }
+
+        function disconnectSession() {
+            if (workerWs) {
+                workerWs.close();
+                workerWs = null;
+            }
+            sessionId = null;
+            sessionStartedAt = null;
+            if (sessionTimerInterval) {
+                clearInterval(sessionTimerInterval);
+                sessionTimerInterval = null;
+            }
+            // Cancel any running queue
+            runQueue = [];
+            isRunningQueue = false;
+            activeCellId = null;
+            
+            updateStatus('', 'Not Connected');
+            setDisconnectedUI();
         }
 
         async function pollSessionStatus() {
@@ -289,18 +358,18 @@
                         setTimeout(pollSessionStatus, 3000);
                     } else if (res.session_status === 'active') {
                         if (res.worker_url) {
-                            if (!workerWs) connectWorker(res.worker_url);
+                            connectWorker(res.worker_url);
                             updateStatus('active', 'Online');
-                            sessionStartedAt = res.started_at;
+                            sessionStartedAt = res.started_at || Math.floor(Date.now() / 1000);
                             startTimer();
+                            setConnectedUI();
                         } else {
                             updateStatus('queued', 'Booting VM...');
                             setTimeout(pollSessionStatus, 3000);
                         }
                     } else if (res.session_status === 'expired' || res.session_status === 'closed') {
                         updateStatus('error', 'Session Ended');
-                        clearInterval(sessionTimerInterval);
-                        if (workerWs) workerWs.close();
+                        disconnectSession();
                     }
                 }
             } catch(e) {
@@ -318,6 +387,8 @@
                     document.getElementById('session-timer').innerText = "00:00";
                     updateStatus('error', 'Session Expired');
                     clearInterval(sessionTimerInterval);
+                    sessionTimerInterval = null;
+                    disconnectSession();
                 } else {
                     const m = Math.floor(remaining / 60).toString().padStart(2, '0');
                     const s = (remaining % 60).toString().padStart(2, '0');
@@ -329,11 +400,13 @@
         // ---------- WebSocket Logic ----------
 
         function connectWorker(url) {
+            if (workerWs) {
+                try { workerWs.close(); } catch(e) {}
+                workerWs = null;
+            }
+            
             workerWs = new WebSocket(url);
             workerWs.onopen = () => {
-                // Fetch user plan directly from DB first if we can, 
-                // but since we only have session_status.php, let's assume 'free'
-                // unless we fetched it during startSession (ideally start_session.php returns it)
                 workerWs.send(JSON.stringify({ type: 'auth', session_id: sessionId }));
                 setTimeout(refreshFiles, 500); // load files
             };
@@ -345,6 +418,7 @@
                     if (data.type === 'message') {
                         if (!activeCellId) return;
                         const outDiv = document.getElementById('out_' + activeCellId);
+                        if (!outDiv) return;
                         
                         // Check for EOF magic string
                         if (data.data.includes(`__DEVBOX_EOF_${activeCellId}__`)) {
@@ -382,14 +456,20 @@
             
             workerWs.onclose = () => {
                 workerWs = null;
-                updateStatus('error', 'Disconnected from VM');
+                // Only show disconnected if we were actually connected (not a manual disconnect)
+                if (sessionId) {
+                    updateStatus('error', 'Disconnected from VM');
+                    setDisconnectedUI();
+                }
             };
         }
 
         // ---------- File Manager Logic ----------
 
         function refreshFiles() {
-            if (workerWs) workerWs.send(JSON.stringify({ type: 'list_dir', path: currentPath }));
+            if (isRuntimeConnected()) {
+                workerWs.send(JSON.stringify({ type: 'list_dir', path: currentPath }));
+            }
         }
 
         function renderFileTree(items) {
@@ -422,17 +502,34 @@
                 `;
                 div.onclick = () => {
                     if (item.is_dir) {
-                        // For now we don't handle nested folders easily in UI, but could just change currentPath
-                        alert("Folder navigation not yet implemented in UI");
+                        // Navigate into folder
+                        currentPath = currentPath + item.name + '/';
+                        refreshFiles();
                     } else {
                         workerWs.send(JSON.stringify({ type: 'read_file', path: currentPath + item.name }));
                     }
                 };
                 tree.appendChild(div);
             });
+
+            // Add ".. (go back)" if not at root
+            if (currentPath !== '/') {
+                const backDiv = document.createElement('div');
+                backDiv.className = 'file-item';
+                backDiv.innerHTML = `<div class="file-item-name"><span>⬆️</span><span>.. (parent folder)</span></div>`;
+                backDiv.onclick = () => {
+                    // Go up one directory
+                    const parts = currentPath.replace(/\/$/, '').split('/');
+                    parts.pop();
+                    currentPath = parts.length <= 1 ? '/' : parts.join('/') + '/';
+                    refreshFiles();
+                };
+                tree.prepend(backDiv);
+            }
         }
 
         function newFile() {
+            if (!isRuntimeConnected()) { alert("Not connected to a runtime."); return; }
             const name = prompt("Enter file name (e.g. script.py):");
             if (name && workerWs) {
                 workerWs.send(JSON.stringify({ type: 'write_file', path: currentPath + name, content: "" }));
@@ -441,6 +538,7 @@
         }
 
         function newFolder() {
+            if (!isRuntimeConnected()) { alert("Not connected to a runtime."); return; }
             const name = prompt("Enter folder name:");
             if (name && workerWs) {
                 workerWs.send(JSON.stringify({ type: 'create_folder', path: currentPath + name }));
@@ -449,6 +547,7 @@
         }
 
         function deleteItem(name) {
+            if (!isRuntimeConnected()) { alert("Not connected to a runtime."); return; }
             if (confirm(`Delete ${name}?`)) {
                 workerWs.send(JSON.stringify({ type: 'delete_item', path: currentPath + name }));
                 setTimeout(refreshFiles, 500);
@@ -468,14 +567,14 @@
         }
 
         function saveFile() {
-            if (currentEditingFile && workerWs) {
+            if (currentEditingFile && isRuntimeConnected()) {
                 const content = document.getElementById('editor-textarea').value;
                 workerWs.send(JSON.stringify({ type: 'write_file', path: currentEditingFile, content: content }));
             }
         }
 
+        // Only load the notebook — do NOT auto-connect to runtime
         loadNotebook();
-        startSession();
     </script>
 </body>
 </html>

@@ -15,12 +15,12 @@ BASE_URL = os.environ.get("BASE_URL", "https://absoradevbox.vercel.app")
 API_URL = BASE_URL + "/api/worker_api"
 BAN_API_URL = BASE_URL + "/api/ban_user"
 RUNNER_ID = os.environ.get("RUNNER_ID", "local_runner")
-RUNNER_TYPE = os.environ.get("RUNNER_TYPE", "cpu")
 PORT = 8080
 MAX_SLOTS = 20
 
 active_sessions = {}
 worker_url = None
+registered_vm_id = None
 
 def api_call(op, payload=None, url=None):
     try:
@@ -37,19 +37,30 @@ def api_call(op, payload=None, url=None):
         return {"status": "error"}
 
 def heartbeat_loop():
+    global registered_vm_id
     print("Started heartbeat loop")
     while True:
         try:
-            api_call("vm_heartbeat", {
-                "vm_id": RUNNER_ID,
+            result = api_call("vm_heartbeat", {
+                "vm_id": registered_vm_id or RUNNER_ID,
                 "active_users": len(active_sessions)
             })
+            # If VM was not found in DB, re-register
+            if result.get("status") == "error" and worker_url:
+                print("VM not found in DB, re-registering...")
+                reg_result = api_call("register_vm", {
+                    "vm_id": RUNNER_ID,
+                    "worker_url": worker_url
+                })
+                if reg_result.get("status") == "success":
+                    registered_vm_id = reg_result.get("vm_id", RUNNER_ID)
+                    print(f"Re-registered as VM: {registered_vm_id}")
         except:
             pass
         time.sleep(30)
 
 def start_tunnel():
-    global worker_url
+    global worker_url, registered_vm_id
     print("Starting cloudflared tunnel...")
     tunnel_proc = subprocess.Popen(
         ["cloudflared", "tunnel", "--url", f"http://localhost:{PORT}"],
@@ -66,11 +77,12 @@ def start_tunnel():
             print(f"Tunnel established: {worker_url}")
             
             # Register VM with the Backend
-            api_call("register_vm", {
+            reg_result = api_call("register_vm", {
                 "vm_id": RUNNER_ID,
-                "worker_url": worker_url,
-                "runner_type": RUNNER_TYPE
+                "worker_url": worker_url
             })
+            registered_vm_id = reg_result.get("vm_id", RUNNER_ID)
+            print(f"Registered as VM: {registered_vm_id}")
             
             # Start Heartbeat thread
             threading.Thread(target=heartbeat_loop, daemon=True).start()
@@ -124,26 +136,20 @@ async def handle_client(websocket):
         nice_val = 15
         ram_bytes = 4 * 1024 * 1024 * 1024
         disk_limit_mb = 500
-        gpu_mem_limit = "2048M"
         
         if plan == "pro":
             nice_val = 5
             ram_bytes = 8 * 1024 * 1024 * 1024
             disk_limit_mb = 1024
-            gpu_mem_limit = "4096M"
         elif plan == "developer":
             nice_val = 0
             ram_bytes = 16 * 1024 * 1024 * 1024
             disk_limit_mb = 3072
-            gpu_mem_limit = "6144M"
             
         master_fd, slave_fd = pty.openpty()
         env = os.environ.copy()
         env["HOME"] = home_dir
         env["USER"] = f"devbox_{session_id[:8]}"
-        
-        if RUNNER_TYPE == "gpu":
-            env["CUDA_MPS_PINNED_DEVICE_MEM_LIMIT"] = gpu_mem_limit
         
         cmd = ["prlimit", f"--as={ram_bytes}", "nice", f"-n{nice_val}", "/bin/bash"]
         try:

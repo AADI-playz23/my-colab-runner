@@ -17,7 +17,7 @@ async function checkAndResetWeeklyBudget(username) {
   
   if (now > week_ends_at) {
     await pool.query(
-      'UPDATE users SET cpu_minutes_used = 0, gpu_minutes_used = 0, week_ends_at = $1 WHERE username = $2',
+      'UPDATE users SET cpu_minutes_used = 0, week_ends_at = $1 WHERE username = $2',
       [now + 604800, username]
     );
     return true;
@@ -55,7 +55,7 @@ async function getUserUsage(username) {
 }
 
 async function triggerVM() {
-  // GitHub Actions Trigger for CPU VM
+  // GitHub Actions Trigger — spins up a new runner VM
   const token = process.env.GITHUB_TOKEN;
   const repo = process.env.GITHUB_REPO;
   if (token && repo) {
@@ -118,6 +118,7 @@ export default async function handler(req, res) {
               status: "active",
               session_id: active_id,
               worker_url: sess.worker_url,
+              started_at: sess.started_at ? parseInt(sess.started_at) : null,
               session_limit_mins: usage.session_limit_mins
             });
           } else {
@@ -127,7 +128,7 @@ export default async function handler(req, res) {
           }
         } else if (sess.status === 'queued' || sess.status === 'booting' || sess.status === 'running') {
           // Check if there are any active VMs to service this queue
-          const countRes = await pool.query("SELECT COUNT(*) as vm_count FROM vms WHERE runner_type = 'cpu' AND last_heartbeat > $1", [recent_time]);
+          const countRes = await pool.query("SELECT COUNT(*) as vm_count FROM vms WHERE last_heartbeat > $1", [recent_time]);
           const vm_count = parseInt(countRes.rows[0].vm_count);
           
           if (vm_count === 0) {
@@ -152,11 +153,11 @@ export default async function handler(req, res) {
     const session_id = crypto.randomBytes(16).toString('hex');
     const timeout_secs = usage.session_limit_mins * 60;
     
-    // Find an available VM in the Fleet matching CPU
+    // Find an available VM in the Fleet
     const recent_time = Math.floor(Date.now() / 1000) - 120; // 2 minutes
     
     const vmRes = await pool.query(
-      "SELECT worker_url FROM vms WHERE runner_type = 'cpu' AND active_users < 20 AND last_heartbeat > $1 ORDER BY active_users ASC LIMIT 1",
+      "SELECT worker_url FROM vms WHERE active_users < 20 AND last_heartbeat > $1 ORDER BY active_users ASC LIMIT 1",
       [recent_time]
     );
 
@@ -176,12 +177,13 @@ export default async function handler(req, res) {
         status: "active",
         session_id,
         worker_url,
+        started_at: now,
         session_limit_mins: usage.session_limit_mins
       });
     } else {
       // No space available. Check VM count.
       const max_vms = 2; // up to 2 CPU VMs = 40 users max before strict queue
-      const countRes = await pool.query("SELECT COUNT(*) as vm_count FROM vms WHERE runner_type = 'cpu' AND last_heartbeat > $1", [recent_time]);
+      const countRes = await pool.query("SELECT COUNT(*) as vm_count FROM vms WHERE last_heartbeat > $1", [recent_time]);
       const vm_count = parseInt(countRes.rows[0].vm_count);
       
       // Create session in queue (Postgres)

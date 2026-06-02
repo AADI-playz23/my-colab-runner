@@ -76,13 +76,12 @@
                 <thead>
                     <tr>
                         <th>VM ID</th>
-                        <th>Type</th>
                         <th>Active Users</th>
                         <th>Last Heartbeat</th>
                     </tr>
                 </thead>
                 <tbody id="vms-body">
-                    <tr><td colspan="4">Loading...</td></tr>
+                    <tr><td colspan="3">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -197,7 +196,7 @@
                 // Render VMs
                 const vmsBody = document.getElementById('vms-body');
                 if (res.vms.length === 0) {
-                    vmsBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#8b949e;">No active VMs</td></tr>';
+                    vmsBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#8b949e;">No active VMs</td></tr>';
                 } else {
                     vmsBody.innerHTML = res.vms.map(vm => {
                         const now = Math.floor(Date.now() / 1000);
@@ -205,7 +204,6 @@
                         const statusColor = ago > 60 ? '#da3633' : '#238636';
                         return `<tr>
                             <td>${vm.id}</td>
-                            <td><span class="badge" style="background:#1f6feb;">${vm.runner_type.toUpperCase()}</span></td>
                             <td>${vm.active_users} / 20</td>
                             <td style="color: ${statusColor}">${ago} seconds ago</td>
                         </tr>`;

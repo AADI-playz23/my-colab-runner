@@ -11,7 +11,7 @@ export default async function handler(req, res) {
         password VARCHAR(255) NOT NULL,
         plan VARCHAR(50) DEFAULT 'free',
         cpu_minutes_used INT DEFAULT 0,
-        gpu_minutes_used INT DEFAULT 0,
+
         week_ends_at BIGINT DEFAULT 0,
         session_active VARCHAR(255),
         is_admin BOOLEAN DEFAULT FALSE,
@@ -37,7 +37,6 @@ export default async function handler(req, res) {
       CREATE TABLE IF NOT EXISTS vms (
         id VARCHAR(255) PRIMARY KEY,
         worker_url VARCHAR(255) NOT NULL,
-        runner_type VARCHAR(50) DEFAULT 'cpu',
         active_users INT DEFAULT 0,
         last_heartbeat BIGINT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     }
 
     // Fetch VMs
-    const vms = await pool.query('SELECT id, runner_type, active_users, last_heartbeat FROM vms ORDER BY last_heartbeat DESC');
+    const vms = await pool.query('SELECT id, active_users, last_heartbeat FROM vms ORDER BY last_heartbeat DESC');
     
     // Fetch Online Users (active sessions)
     const sessions = await pool.query("SELECT id, username, plan, worker_url, started_at FROM sessions WHERE status = 'active' ORDER BY started_at DESC");
