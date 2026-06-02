@@ -49,25 +49,11 @@ def api_call(op, payload=None, url=None):
 def heartbeat_loop():
     global registered_vm_id
     print("Started heartbeat loop")
-    
-    # Track when the runner had 0 users
-    zero_users_start_time = time.time()
-    
     while True:
-        num_users = len(active_sessions)
-        
-        # Idle termination logic
-        if num_users == 0:
-            if time.time() - zero_users_start_time > 120:
-                print("No active users for 2 minutes. Terminating runner to save resources.")
-                os._exit(0)
-        else:
-            zero_users_start_time = time.time()
-            
         try:
             result = api_call("vm_heartbeat", {
                 "vm_id": registered_vm_id or RUNNER_ID,
-                "active_users": num_users
+                "active_users": len(active_sessions)
             })
             # If VM was not found in DB, re-register
             if result.get("status") == "error" and worker_url:
@@ -191,37 +177,25 @@ async def handle_client(websocket):
         env["HOME"] = home_dir
         env["USER"] = f"devbox_{session_id[:8]}"
         
-        import time
-        
-        def start_process(cmd_list):
-            for cmd in cmd_list:
-                try:
-                    if HAS_PTY:
-                        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=slave_fd, stderr=slave_fd, cwd=home_dir, env=env, text=True, bufsize=1)
-                    else:
-                        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=home_dir, env=env, text=True, bufsize=1)
-                    
-                    # Wait slightly to see if process crashes immediately (e.g. prlimit failed)
-                    time.sleep(0.1)
-                    if proc.poll() is None:
-                        return proc
-                except FileNotFoundError:
-                    pass
-            return None
-
         # On Windows, fallback to simple bash or cmd
         if sys.platform == "win32":
-            cmds_to_try = [["cmd.exe"]]
+            cmd = ["cmd.exe"]
         else:
-            cmds_to_try = [
-                ["prlimit", f"--as={ram_bytes}", "nice", f"-n{nice_val}", "/bin/bash"],
-                ["nice", f"-n{nice_val}", "/bin/bash"],
-                ["/bin/bash"]
-            ]
+            cmd = ["prlimit", f"--as={ram_bytes}", "nice", f"-n{nice_val}", "/bin/bash"]
             
-        p = start_process(cmds_to_try)
-        if not p:
-            raise Exception("Failed to start bash process. All command fallbacks failed.")
+        try:
+            if HAS_PTY:
+                p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=slave_fd, stderr=slave_fd, cwd=home_dir, env=env, text=True, bufsize=1)
+            else:
+                p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=home_dir, env=env, text=True, bufsize=1)
+        except FileNotFoundError:
+            if sys.platform != "win32":
+                if HAS_PTY:
+                    p = subprocess.Popen(["nice", f"-n{nice_val}", "/bin/bash"], stdin=subprocess.PIPE, stdout=slave_fd, stderr=slave_fd, cwd=home_dir, env=env, text=True, bufsize=1)
+                else:
+                    p = subprocess.Popen(["nice", f"-n{nice_val}", "/bin/bash"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=home_dir, env=env, text=True, bufsize=1)
+            else:
+                raise
             
         if HAS_PTY:
             os.close(slave_fd)
@@ -338,15 +312,8 @@ async def handle_client(websocket):
                 
                 magic = f"__DEVBOX_EOF_{cell_id}__"
                 cmd_str = raw_cmd + f"\necho '{magic}'\n"
-                
-                try:
-                    p.stdin.write(cmd_str)
-                    p.stdin.flush()
-                except BrokenPipeError:
-                    err_msg = f"\n\n[SYSTEM ERROR] Process died unexpectedly (Exit code: {p.poll()}). Please restart session.\n"
-                    try:
-                        await websocket.send(json.dumps({"type": "message", "data": err_msg}))
-                    except: pass
+                p.stdin.write(cmd_str)
+                p.stdin.flush()
                 
             elif msg_type == 'list_dir':
                 path = data.get('path', '/')
