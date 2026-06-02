@@ -330,13 +330,24 @@ async def handle_client(websocket):
             except:
                 pass
 
-async def health_check(path, request_headers):
+async def health_check(*args):
     """Handle Cloudflare HTTP health-check pings gracefully."""
-    # Cloudflare sends regular HTTP GET requests to check tunnel health.
-    # Return a simple 200 OK response so they don't crash the WS server.
+    # websockets 13+ signature: (connection, request)
+    # older websockets signature: (path, request_headers)
     from http import HTTPStatus
-    if 'Upgrade' not in request_headers or request_headers.get('Upgrade', '').lower() != 'websocket':
-        return HTTPStatus.OK, [], b"OK\n"
+    
+    headers = None
+    if len(args) == 2:
+        if hasattr(args[1], 'headers'):
+            headers = args[1].headers # newer versions
+        elif isinstance(args[1], dict):
+            headers = args[1] # older versions
+            
+    if headers:
+        upgrade = headers.get('Upgrade', '').lower()
+        if upgrade != 'websocket':
+            return HTTPStatus.OK, [], b"OK\n"
+            
     return None
 
 async def main_loop():
