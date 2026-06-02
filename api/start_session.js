@@ -125,28 +125,25 @@ export default async function handler(req, res) {
             await pool.query("UPDATE sessions SET status = 'closed' WHERE id = $1", [active_id]);
             await pool.query("UPDATE users SET session_active = NULL WHERE username = $1", [u]);
           }
-        } else if (sess.status === 'queued' || sess.status === 'running') {
-          // Check if we need to trigger a VM
+        } else if (sess.status === 'queued' || sess.status === 'booting' || sess.status === 'running') {
+          // Check if there are any active VMs to service this queue
           const countRes = await pool.query("SELECT COUNT(*) as vm_count FROM vms WHERE runner_type = 'cpu' AND last_heartbeat > $1", [recent_time]);
           const vm_count = parseInt(countRes.rows[0].vm_count);
-          const max_vms = 2;
           
-          if (vm_count < max_vms) {
-            await triggerVM();
+          if (vm_count === 0) {
+            // No VMs are alive to service this queued session. It's a dead/stuck queue.
+            // Close it and let the code below generate a fresh session.
+            await pool.query("UPDATE sessions SET status = 'closed' WHERE id = $1", [active_id]);
+            await pool.query("UPDATE users SET session_active = NULL WHERE username = $1", [u]);
+          } else {
+            // There are VMs alive, just tell the user to keep waiting
             return res.status(200).json({
-              status: "booting",
+              status: "queued",
               session_id: active_id,
               queue_position: 0,
               session_limit_mins: usage.session_limit_mins
             });
           }
-          
-          return res.status(200).json({
-            status: "queued",
-            session_id: active_id,
-            queue_position: 0,
-            session_limit_mins: usage.session_limit_mins
-          });
         }
       }
     }
