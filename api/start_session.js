@@ -104,14 +104,50 @@ export default async function handler(req, res) {
     // Check for existing active/queued session
     if (uResInfo.rows.length > 0 && uResInfo.rows[0].session_active) {
       const active_id = uResInfo.rows[0].session_active;
-      const sRes = await pool.query("SELECT status FROM sessions WHERE id = $1 AND status IN ('queued', 'running', 'active')", [active_id]);
+      const sRes = await pool.query("SELECT status, worker_url, started_at FROM sessions WHERE id = $1 AND status IN ('queued', 'running', 'active')", [active_id]);
       if (sRes.rows.length > 0) {
-        return res.status(200).json({
-          status: "success",
-          session_id: active_id,
-          queue_position: 0,
-          session_limit_mins: usage.session_limit_mins
-        });
+        const sess = sRes.rows[0];
+        const recent_time = Math.floor(Date.now() / 1000) - 120;
+        
+        // If session is active, check if the VM is still alive
+        if (sess.status === 'active' && sess.worker_url) {
+          const vmAlive = await pool.query("SELECT id FROM vms WHERE worker_url = $1 AND last_heartbeat > $2", [sess.worker_url, recent_time]);
+          if (vmAlive.rows.length > 0) {
+            // VM is alive, return the existing session
+            return res.status(200).json({
+              status: "active",
+              session_id: active_id,
+              worker_url: sess.worker_url,
+              session_limit_mins: usage.session_limit_mins
+            });
+          } else {
+            // VM is dead, close the stale session and let user start fresh
+            await pool.query("UPDATE sessions SET status = 'closed' WHERE id = $1", [active_id]);
+            await pool.query("UPDATE users SET session_active = NULL WHERE username = $1", [u]);
+          }
+        } else if (sess.status === 'queued' || sess.status === 'running') {
+          // Check if we need to trigger a VM
+          const countRes = await pool.query("SELECT COUNT(*) as vm_count FROM vms WHERE runner_type = 'cpu' AND last_heartbeat > $1", [recent_time]);
+          const vm_count = parseInt(countRes.rows[0].vm_count);
+          const max_vms = 2;
+          
+          if (vm_count < max_vms) {
+            await triggerVM();
+            return res.status(200).json({
+              status: "booting",
+              session_id: active_id,
+              queue_position: 0,
+              session_limit_mins: usage.session_limit_mins
+            });
+          }
+          
+          return res.status(200).json({
+            status: "queued",
+            session_id: active_id,
+            queue_position: 0,
+            session_limit_mins: usage.session_limit_mins
+          });
+        }
       }
     }
 
