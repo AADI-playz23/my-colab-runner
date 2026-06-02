@@ -4,8 +4,18 @@ import json
 import threading
 import subprocess
 import select
-import pty
 import asyncio
+import websockets
+import re
+import sys
+import shutil
+from urllib import request, parse
+
+try:
+    import pty
+    HAS_PTY = True
+except ImportError:
+    HAS_PTY = False
 import websockets
 import re
 import shutil
@@ -130,7 +140,11 @@ async def handle_client(websocket):
         
         print(f"Auth successful for {session_id}")
         
-        home_dir = f"/home/devbox_{session_id[:8]}"
+        if sys.platform == "win32":
+            home_dir = os.path.abspath(f"./home/devbox_{session_id[:8]}")
+        else:
+            home_dir = f"/home/devbox_{session_id[:8]}"
+            
         os.makedirs(home_dir, exist_ok=True)
         
         nice_val = 15
@@ -146,18 +160,37 @@ async def handle_client(websocket):
             ram_bytes = 16 * 1024 * 1024 * 1024
             disk_limit_mb = 3072
             
-        master_fd, slave_fd = pty.openpty()
+        if HAS_PTY:
+            master_fd, slave_fd = pty.openpty()
+        else:
+            master_fd, slave_fd = None, subprocess.PIPE
+            
         env = os.environ.copy()
         env["HOME"] = home_dir
         env["USER"] = f"devbox_{session_id[:8]}"
         
-        cmd = ["prlimit", f"--as={ram_bytes}", "nice", f"-n{nice_val}", "/bin/bash"]
-        try:
-            p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=slave_fd, stderr=slave_fd, cwd=home_dir, env=env, text=True, bufsize=1)
-        except FileNotFoundError:
-            p = subprocess.Popen(["nice", f"-n{nice_val}", "/bin/bash"], stdin=subprocess.PIPE, stdout=slave_fd, stderr=slave_fd, cwd=home_dir, env=env, text=True, bufsize=1)
+        # On Windows, fallback to simple bash or cmd
+        if sys.platform == "win32":
+            cmd = ["cmd.exe"]
+        else:
+            cmd = ["prlimit", f"--as={ram_bytes}", "nice", f"-n{nice_val}", "/bin/bash"]
             
-        os.close(slave_fd)
+        try:
+            if HAS_PTY:
+                p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=slave_fd, stderr=slave_fd, cwd=home_dir, env=env, text=True, bufsize=1)
+            else:
+                p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=home_dir, env=env, text=True, bufsize=1)
+        except FileNotFoundError:
+            if sys.platform != "win32":
+                if HAS_PTY:
+                    p = subprocess.Popen(["nice", f"-n{nice_val}", "/bin/bash"], stdin=subprocess.PIPE, stdout=slave_fd, stderr=slave_fd, cwd=home_dir, env=env, text=True, bufsize=1)
+                else:
+                    p = subprocess.Popen(["nice", f"-n{nice_val}", "/bin/bash"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=home_dir, env=env, text=True, bufsize=1)
+            else:
+                raise
+            
+        if HAS_PTY:
+            os.close(slave_fd)
 
         async def resource_monitor():
             while p.poll() is None:
@@ -196,11 +229,21 @@ async def handle_client(websocket):
         async def read_bash_output():
             try:
                 while p.poll() is None:
-                    rlist, _, _ = select.select([master_fd], [], [], 0.1)
-                    if rlist:
-                        chunk = os.read(master_fd, 4096).decode('utf-8', errors='replace')
-                        if chunk:
-                            await websocket.send(json.dumps({"type": "message", "data": chunk}))
+                    if HAS_PTY:
+                        # On Unix with PTY
+                        rlist, _, _ = select.select([master_fd], [], [], 0.1)
+                        if rlist:
+                            chunk = os.read(master_fd, 4096).decode('utf-8', errors='replace')
+                            if chunk:
+                                await websocket.send(json.dumps({"type": "message", "data": chunk}))
+                    else:
+                        # On Windows without PTY, just read line by line non-blocking if possible,
+                        # but Popen.stdout.readline() is blocking. We'll use a simple approach for testing:
+                        line = p.stdout.readline()
+                        if line:
+                            await websocket.send(json.dumps({"type": "message", "data": line}))
+                        else:
+                            break
                     await asyncio.sleep(0.01)
             except Exception as e:
                 pass
@@ -326,13 +369,20 @@ async def handle_client(websocket):
     except websockets.exceptions.ConnectionClosed:
         print(f"Client {session_id} disconnected")
     except Exception as e:
-        print(f"Handler error: {e}")
+        import traceback
+        err_msg = traceback.format_exc()
+        print(f"Handler error: {err_msg}")
+        try:
+            await websocket.send(json.dumps({"type": "message", "data": f"\n\n[RUNNER ERROR]: {str(e)}\n{err_msg}\n"}))
+        except:
+            pass
     finally:
         if session_id and session_id in active_sessions:
             del active_sessions[session_id]
             try:
                 p.terminate()
-                os.close(master_fd)
+                if HAS_PTY:
+                    os.close(master_fd)
             except:
                 pass
 
