@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevBox IDE</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        .header { background: #161b22; padding: 10px 20px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
+        .notebook-title { font-size: 1.2em; font-weight: bold; }
+        .status { padding: 4px 8px; border-radius: 4px; font-size: 0.9em; background: #30363d; }
+        .status.active { background: #238636; color: white; }
+        .status.queued { background: #d29922; color: black; }
+        .status.error { background: #da3633; color: white; }
+        
+        .toolbar { padding: 10px 20px; background: #161b22; border-bottom: 1px solid #30363d; display: flex; gap: 10px; }
+        .btn { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .btn:hover { background: #30363d; }
+        .btn-run { background: #238636; color: white; border: none; }
+        .btn-run:hover { background: #2ea043; }
+        
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        
+        .file-manager { width: 260px; background: #161b22; border-right: 1px solid #30363d; display: flex; flex-direction: column; }
+        .fm-header { padding: 10px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; }
+        .fm-btn { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 16px; padding: 0 4px; }
+        .fm-btn:hover { color: #c9d1d9; }
+        .file-tree { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .file-item { padding: 5px 15px; cursor: pointer; display: flex; justify-content: space-between; font-size: 13px; color: #8b949e; }
+        .file-item:hover { background: #30363d; color: #c9d1d9; }
+        .file-item-name { display: flex; align-items: center; gap: 8px; }
+        .file-item-actions { display: none; }
+        .file-item:hover .file-item-actions { display: block; }
+
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .cell { background: #161b22; border: 1px solid #30363d; margin-bottom: 20px; border-radius: 6px; overflow: hidden; }
+        .cell-header { background: #21262d; padding: 8px 10px; display: flex; justify-content: space-between; border-bottom: 1px solid #30363d; font-size: 14px; }
+        .cell-input textarea { width: 100%; min-height: 80px; background: #0d1117; color: #c9d1d9; border: none; padding: 10px; font-family: monospace; resize: vertical; box-sizing: border-box; outline: none; }
+        .cell-output { background: #010409; padding: 10px; color: #e6edf3; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; min-height: 20px; border-top: 1px solid #30363d; font-size: 13px; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .editor-modal { background: #161b22; width: 80%; height: 80%; border: 1px solid #30363d; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .editor-header { padding: 10px 20px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 14px; }
+        .editor-textarea { flex: 1; background: #0d1117; color: #e6edf3; border: none; padding: 20px; font-family: 'Consolas', monospace; font-size: 14px; resize: none; outline: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <a href="dashboard.html" style="color: #58a6ff; text-decoration: none; margin-right: 15px;">&larr; Dashboard</a>
+            <span class="notebook-title" id="nb-title">Loading...</span>
+        </div>
+            <span id="plan-badge" class="status" style="margin-right: 15px; background: #1f6feb; display: none;"></span>
+            <span id="usage-stats" style="margin-right: 15px; font-family: monospace; color: #8b949e; display: none;"></span>
+            <span id="session-timer" style="margin-right: 15px; font-family: monospace;"></span>
+            <span class="status" id="status-badge">Connecting...</span>
+            <button onclick="window.location.href='dashboard.html'" style="margin-left: 15px; background: #21262d; border: 1px solid #30363d; color: #c9d1d9; border-radius: 4px; padding: 2px 10px; cursor: pointer;">Exit</button>
+        </div>
+    </div>
+    
+    <div class="toolbar">
+        <button class="btn" onclick="addCell()">+ Add Bash Cell</button>
+        <button class="btn btn-run" onclick="runAllCells()" id="btn-run-all">▶ Run All</button>
+        <button class="btn" onclick="saveNotebook()">Save Notebook</button>
+    </div>
+
+    <div class="main-container">
+        <!-- File Manager Sidebar -->
+        <div class="file-manager">
+            <div class="fm-header">
+                <span>File Explorer</span>
+                <div>
+                    <button class="fm-btn" onclick="refreshFiles()" title="Refresh">↻</button>
+                    <button class="fm-btn" onclick="newFile()" title="New File">📄</button>
+                    <button class="fm-btn" onclick="newFolder()" title="New Folder">📁</button>
+                </div>
+            </div>
+            <div class="file-tree" id="file-tree">
+                <div style="padding: 10px; color: #8b949e; font-size: 12px; text-align: center;">Waiting for VM...</div>
+            </div>
+        </div>
+
+        <!-- Notebook Content -->
+        <div class="content" id="cells-container">
+            <!-- Cells go here -->
+        </div>
+    </div>
+
+    <!-- File Editor Modal -->
+    <div class="modal-overlay" id="editor-modal">
+        <div class="editor-modal">
+            <div class="editor-header">
+                <span id="editor-filename">filename.txt</span>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-run" onclick="saveFile()">Save</button>
+                    <button class="btn" onclick="closeEditor()">Close</button>
+                </div>
+            </div>
+            <textarea class="editor-textarea" id="editor-textarea" spellcheck="false"></textarea>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const nbId = urlParams.get('id');
+        const username = localStorage.getItem('username');
+        
+        let notebook = null;
+        let sessionId = null;
+        let userPlan = 'free';
+        let sessionTimerInterval = null;
+        let sessionTimeoutSecs = 0;
+        let sessionStartedAt = null;
+        let workerWs = null;
+        
+        let activeCellId = null;
+        let runQueue = [];
+        let isRunningQueue = false;
+        
+        let currentPath = '/';
+        let currentEditingFile = null;
+
+        if (!username || !nbId) {
+            window.location.href = 'dashboard.html';
+        }
+
+        // ---------- Notebook Logic ----------
+
+        function loadNotebook() {
+            const notebooks = JSON.parse(localStorage.getItem('notebooks') || '[]');
+            notebook = notebooks.find(n => n.id === nbId);
+            if (!notebook) {
+                alert("Notebook not found");
+                window.location.href = 'dashboard.html';
+                return;
+            }
+            document.getElementById('nb-title').innerText = notebook.name;
+            
+            if (!notebook.cells) notebook.cells = [];
+            if (notebook.cells.length === 0) addCell();
+            else renderCells();
+        }
+
+        function saveNotebook() {
+            if (!notebook) return;
+            document.querySelectorAll('.cell').forEach(el => {
+                const id = el.dataset.id;
+                const code = el.querySelector('textarea').value;
+                const cell = notebook.cells.find(c => c.id === id);
+                if (cell) cell.code = code;
+            });
+            notebook.updatedAt = Date.now();
+            
+            const notebooks = JSON.parse(localStorage.getItem('notebooks') || '[]');
+            const idx = notebooks.findIndex(n => n.id === nbId);
+            if (idx !== -1) {
+                notebooks[idx] = notebook;
+                localStorage.setItem('notebooks', JSON.stringify(notebooks));
+            }
+            console.log("Saved Notebook.");
+        }
+
+        function addCell() {
+            const cellId = 'cell_' + Date.now();
+            notebook.cells.push({ id: cellId, code: '' });
+            renderCells();
+            saveNotebook();
+        }
+
+        function deleteCell(id) {
+            notebook.cells = notebook.cells.filter(c => c.id !== id);
+            renderCells();
+            saveNotebook();
+        }
+
+        function renderCells() {
+            const container = document.getElementById('cells-container');
+            container.innerHTML = '';
+            notebook.cells.forEach((cell, idx) => {
+                const div = document.createElement('div');
+                div.className = 'cell';
+                div.dataset.id = cell.id;
+                div.innerHTML = `
+                    <div class="cell-header">
+                        <span>[${idx + 1}] Bash</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-run" onclick="runCell('${cell.id}')">Run</button>
+                            <button class="btn" onclick="deleteCell('${cell.id}')">Delete</button>
+                        </div>
+                    </div>
+                    <div class="cell-input">
+                        <textarea spellcheck="false" placeholder="Enter bash command...">${cell.code}</textarea>
+                    </div>
+                    <div class="cell-output" id="out_${cell.id}" style="display: none;"></div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function runCell(cellId) {
+            if (!sessionId || document.getElementById('status-badge').className.includes('queued') || !workerWs) {
+                alert("Session is not active yet or VM is booting!");
+                return;
+            }
+            saveNotebook();
+            const cell = notebook.cells.find(c => c.id === cellId);
+            const outDiv = document.getElementById('out_' + cellId);
+            outDiv.style.display = 'block';
+            outDiv.innerText = 'Running...\n';
+
+            activeCellId = cellId;
+            workerWs.send(JSON.stringify({
+                type: 'command',
+                cell_id: cellId,
+                command: cell.code
+            }));
+        }
+
+        function runAllCells() {
+            if (!sessionId || !workerWs) {
+                alert("VM is not ready yet!");
+                return;
+            }
+            saveNotebook();
+            runQueue = notebook.cells.map(c => c.id);
+            if (!isRunningQueue) {
+                processRunQueue();
+            }
+        }
+
+        function processRunQueue() {
+            if (runQueue.length === 0) {
+                isRunningQueue = false;
+                document.getElementById('btn-run-all').innerText = "▶ Run All";
+                return;
+            }
+            isRunningQueue = true;
+            document.getElementById('btn-run-all').innerText = "Running...";
+            const cellId = runQueue.shift();
+            runCell(cellId);
+        }
+
+        // ---------- Session Logic ----------
+
+        function updateStatus(status, text) {
+            const badge = document.getElementById('status-badge');
+            badge.className = 'status ' + status;
+            badge.innerText = text;
+        }
+
+        async function startSession() {
+            updateStatus('', 'Starting...');
+            const runtime_type = document.getElementById('runtime-select') ? document.getElementById('runtime-select').value : 'cpu';
+            try {
+                const res = await fetch('/api/start_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, runtime_type })
+                }).then(r => r.json());
+
+                if (res.status === 'error') {
+                    updateStatus('error', res.message);
+                    return;
+                }
+
+                sessionId = res.session_id;
+                sessionTimeoutSecs = res.session_limit_mins * 60;
+                
+                if (res.status === 'active' && res.worker_url) {
+                    if (!workerWs) connectWorker(res.worker_url);
+                    updateStatus('active', 'Online');
+                    sessionStartedAt = Math.floor(Date.now() / 1000);
+                    startTimer();
+                } else {
+                    pollSessionStatus();
+                }
+            } catch (e) {
+                updateStatus('error', 'Failed to connect');
+            }
+        }
+
+        async function pollSessionStatus() {
+            if (!sessionId) return;
+            try {
+                const res = await fetch(`/api/session_status?id=${sessionId}`).then(r => r.json());
+                if (res.status === 'success') {
+                    if (res.session_status === 'queued' || res.session_status === 'running' || res.session_status === 'booting') {
+                        updateStatus('queued', (res.session_status === 'running' || res.session_status === 'booting') ? 'Booting VM...' : 'In Queue...');
+                        setTimeout(pollSessionStatus, 3000);
+                    } else if (res.session_status === 'active') {
+                        if (res.worker_url) {
+                            if (!workerWs) connectWorker(res.worker_url);
+                            updateStatus('active', 'Online');
+                            sessionStartedAt = res.started_at;
+                            startTimer();
+                        } else {
+                            updateStatus('queued', 'Booting VM...');
+                            setTimeout(pollSessionStatus, 3000);
+                        }
+                    } else if (res.session_status === 'expired' || res.session_status === 'closed') {
+                        updateStatus('error', 'Session Ended');
+                        clearInterval(sessionTimerInterval);
+                        if (workerWs) workerWs.close();
+                    }
+                }
+            } catch(e) {
+                setTimeout(pollSessionStatus, 3000);
+            }
+        }
+
+        function startTimer() {
+            if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+            sessionTimerInterval = setInterval(() => {
+                const now = Math.floor(Date.now() / 1000);
+                const elapsed = now - sessionStartedAt;
+                const remaining = sessionTimeoutSecs - elapsed;
+                if (remaining <= 0) {
+                    document.getElementById('session-timer').innerText = "00:00";
+                    updateStatus('error', 'Session Expired');
+                    clearInterval(sessionTimerInterval);
+                } else {
+                    const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+                    const s = (remaining % 60).toString().padStart(2, '0');
+                    document.getElementById('session-timer').innerText = `${m}:${s} remaining`;
+                }
+            }, 1000);
+        }
+
+        // ---------- WebSocket Logic ----------
+
+        function connectWorker(url) {
+            workerWs = new WebSocket(url);
+            workerWs.onopen = () => {
+                // Fetch user plan directly from DB first if we can, 
+                // but since we only have session_status.php, let's assume 'free'
+                // unless we fetched it during startSession (ideally start_session.php returns it)
+                workerWs.send(JSON.stringify({ type: 'auth', session_id: sessionId }));
+                setTimeout(refreshFiles, 500); // load files
+            };
+            
+            workerWs.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    
+                    if (data.type === 'message') {
+                        if (!activeCellId) return;
+                        const outDiv = document.getElementById('out_' + activeCellId);
+                        
+                        // Check for EOF magic string
+                        if (data.data.includes(`__DEVBOX_EOF_${activeCellId}__`)) {
+                            const cleanText = data.data.replace(`__DEVBOX_EOF_${activeCellId}__`, '').trim();
+                            if (cleanText) {
+                                if (outDiv.innerText === 'Running...\n') outDiv.innerText = '';
+                                outDiv.innerText += cleanText;
+                            }
+                            activeCellId = null;
+                            if (isRunningQueue) setTimeout(processRunQueue, 100);
+                            return;
+                        }
+                        
+                        if (outDiv.innerText === 'Running...\n') outDiv.innerText = '';
+                        outDiv.innerText += data.data;
+                        outDiv.scrollTop = outDiv.scrollHeight;
+                        
+                    } else if (data.type === 'usage') {
+                        const usageEl = document.getElementById('usage-stats');
+                        usageEl.style.display = 'inline';
+                        usageEl.innerText = `Disk: ${data.disk_mb}MB / ${data.disk_max_mb}MB`;
+                    } else if (data.type === 'dir_list') {
+                        renderFileTree(data.items);
+                    } else if (data.type === 'file_content') {
+                        openEditor(data.path, data.content);
+                    } else if (data.type === 'file_saved') {
+                        alert("File saved!");
+                        closeEditor();
+                        refreshFiles();
+                    } else if (data.type === 'file_error') {
+                        alert("File Error: " + data.message);
+                    }
+                } catch (err) {}
+            };
+            
+            workerWs.onclose = () => {
+                workerWs = null;
+                updateStatus('error', 'Disconnected from VM');
+            };
+        }
+
+        // ---------- File Manager Logic ----------
+
+        function refreshFiles() {
+            if (workerWs) workerWs.send(JSON.stringify({ type: 'list_dir', path: currentPath }));
+        }
+
+        function renderFileTree(items) {
+            const tree = document.getElementById('file-tree');
+            tree.innerHTML = '';
+            
+            if (items.length === 0) {
+                tree.innerHTML = '<div style="padding: 10px; color: #8b949e; font-size: 12px; text-align: center;">Empty directory</div>';
+                return;
+            }
+
+            // Sort dirs first, then files
+            items.sort((a, b) => {
+                if (a.is_dir === b.is_dir) return a.name.localeCompare(b.name);
+                return a.is_dir ? -1 : 1;
+            });
+
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                const icon = item.is_dir ? '📁' : '📄';
+                div.innerHTML = `
+                    <div class="file-item-name">
+                        <span>${icon}</span>
+                        <span>${item.name}</span>
+                    </div>
+                    <div class="file-item-actions">
+                        <button class="fm-btn" onclick="event.stopPropagation(); deleteItem('${item.name}')" title="Delete">🗑</button>
+                    </div>
+                `;
+                div.onclick = () => {
+                    if (item.is_dir) {
+                        // For now we don't handle nested folders easily in UI, but could just change currentPath
+                        alert("Folder navigation not yet implemented in UI");
+                    } else {
+                        workerWs.send(JSON.stringify({ type: 'read_file', path: currentPath + item.name }));
+                    }
+                };
+                tree.appendChild(div);
+            });
+        }
+
+        function newFile() {
+            const name = prompt("Enter file name (e.g. script.py):");
+            if (name && workerWs) {
+                workerWs.send(JSON.stringify({ type: 'write_file', path: currentPath + name, content: "" }));
+                setTimeout(refreshFiles, 500);
+            }
+        }
+
+        function newFolder() {
+            const name = prompt("Enter folder name:");
+            if (name && workerWs) {
+                workerWs.send(JSON.stringify({ type: 'create_folder', path: currentPath + name }));
+                setTimeout(refreshFiles, 500);
+            }
+        }
+
+        function deleteItem(name) {
+            if (confirm(`Delete ${name}?`)) {
+                workerWs.send(JSON.stringify({ type: 'delete_item', path: currentPath + name }));
+                setTimeout(refreshFiles, 500);
+            }
+        }
+
+        function openEditor(path, content) {
+            currentEditingFile = path;
+            document.getElementById('editor-filename').innerText = path;
+            document.getElementById('editor-textarea').value = content;
+            document.getElementById('editor-modal').style.display = 'flex';
+        }
+
+        function closeEditor() {
+            currentEditingFile = null;
+            document.getElementById('editor-modal').style.display = 'none';
+        }
+
+        function saveFile() {
+            if (currentEditingFile && workerWs) {
+                const content = document.getElementById('editor-textarea').value;
+                workerWs.send(JSON.stringify({ type: 'write_file', path: currentEditingFile, content: content }));
+            }
+        }
+
+        loadNotebook();
+        startSession();
+    </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DevBox Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { background: #010409; color: #c9d1d9; font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #0d1117; padding: 40px; border: 1px solid #30363d; border-radius: 8px; width: 320px; text-align: center; }
+        h1 { margin-bottom: 5px; color: #58a6ff; }
+        input { width: 100%; padding: 12px; margin: 10px 0; background: #010409; border: 1px solid #30363d; color: white; border-radius: 6px; outline: none; box-sizing: border-box; }
+        input:focus { border-color: #58a6ff; }
+        button { width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        button:hover { background: #2ea043; }
+        .toggle-link { color: #58a6ff; font-size: 13px; cursor: pointer; margin-top: 20px; display: inline-block; }
+        .toggle-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>⚡ DevBox</h1>
+        <p style="color:#8b949e; font-size:13px; margin-bottom:25px;" id="subtitle">Login to Runner Environment</p>
+        
+        <input type="text" id="user" placeholder="Username">
+        <input type="password" id="pass" placeholder="Password">
+        <input type="password" id="invite" placeholder="Promo/Invite Code (Optional)" style="display: none;">
+        
+        <button id="action-btn" onclick="submitAuth()">Enter DevBox</button>
+        <p id="msg" style="color:#ff7b72; font-size:13px; margin-top:15px;"></p>
+        
+        <span class="toggle-link" onclick="toggleMode()" id="toggle-text">Need an account? Register</span>
+    </div>
+
+    <script>
+        let mode = 'login'; // 'login' or 'register'
+
+        function toggleMode() {
+            mode = mode === 'login' ? 'register' : 'login';
+            document.getElementById('subtitle').innerText = mode === 'login' ? 'Login to Runner Environment' : 'Create a New Account';
+            document.getElementById('action-btn').innerText = mode === 'login' ? 'Enter DevBox' : 'Register';
+            document.getElementById('toggle-text').innerText = mode === 'login' ? 'Need an account? Register' : 'Already have an account? Login';
+            document.getElementById('invite').style.display = mode === 'login' ? 'none' : 'block';
+            document.getElementById('msg').innerText = '';
+        }
+
+        async function submitAuth() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            const invite = document.getElementById('invite').value;
+            const msg = document.getElementById('msg');
+            const btn = document.getElementById('action-btn');
+
+            if(!u || !p) { msg.innerText = "Required fields missing"; return; }
+
+            btn.innerText = "Authenticating...";
+            msg.innerText = "";
+            
+            try {
+                const payload = { username: u, password: p, op: mode };
+                if (mode === 'register') payload.invite = invite;
+
+                const res = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if(data.status === 'success') {
+                    if (mode === 'register') {
+                        msg.style.color = '#3fb950';
+                        msg.innerText = "Registration successful! You can now login.";
+                        toggleMode();
+                    } else {
+                        localStorage.setItem('username', u);
+                        localStorage.setItem('devbox_session', u); // for legacy compat
+                        window.location.href = 'dashboard.html';
+                    }
+                } else {
+                    msg.style.color = '#ff7b72';
+                    msg.innerText = data.message || "Authentication Failed";
+                }
+            } catch(e) {
+                msg.style.color = '#ff7b72';
+                msg.innerText = "Connection Error";
+            } finally {
+                if(msg.innerText !== "Registration successful! You can now login.") {
+                    btn.innerText = mode === 'login' ? 'Enter DevBox' : 'Register';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

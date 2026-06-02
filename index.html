@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevBox - AbsoraCloud Disk Development</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #0d1117; --card-bg: #161b22; --text: #c9d1d9; --accent: #238636; --accent-hover: #2ea043; --blue: #58a6ff; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        
+        /* NAVBAR */
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; max-width: 1200px; margin: 0 auto; }
+        .logo { font-size: 24px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
+        .logo span { color: var(--blue); }
+        .nav-links button { background: transparent; border: 1px solid #30363d; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .nav-links button:hover { border-color: var(--text); }
+
+        /* HERO */
+        .hero { text-align: center; padding: 100px 20px; max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 64px; margin-bottom: 20px; line-height: 1.1; background: linear-gradient(90deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p.subtitle { font-size: 20px; color: #8b949e; margin-bottom: 40px; line-height: 1.6; }
+        
+        .cta-btn { background: var(--accent); color: white; padding: 16px 32px; font-size: 18px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.2s, background 0.2s; text-decoration: none; display: inline-block; }
+        .cta-btn:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+
+        /* FEATURES */
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; max-width: 1200px; margin: 50px auto; padding: 0 20px; }
+        .card { background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid #30363d; transition: 0.3s; }
+        .card:hover { border-color: var(--blue); transform: translateY(-5px); }
+        .card h3 { color: white; margin-top: 0; font-size: 20px; }
+        .card p { color: #8b949e; line-height: 1.5; }
+        .icon { font-size: 30px; margin-bottom: 15px; display: block; }
+
+        footer { text-align: center; padding: 50px; border-top: 1px solid #30363d; margin-top: 100px; color: #484f58; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">⚡ <span>DevBox</span></div>
+        <div class="nav-links"><button onclick="window.location.href='devbox_login.html'">Login</button></div>
+    </nav>
+
+    <div class="hero">
+        <h1>Code Anywhere.<br>Run Everywhere.</h1>
+        <p class="subtitle">A powerful cloud-based IDE connected to your AbsoraCloud Disk storage. Run scripts and manage files directly from your browser.</p>
+        <a href="devbox_login.html" class="cta-btn">Get Started</a>
+    </div>
+
+    <div class="features">
+        <div class="card"><span class="icon">☁️</span><h3>AbsoraCloud Integration</h3><p>Seamlessly connect to your private AbsoraCloud Disk storage nodes.</p></div>
+        <div class="card"><span class="icon">🚀</span><h3>Best High Quality Server</h3><p>Execute code using our professional-grade, high-performance server infrastructure.</p></div>
+        <div class="card"><span class="icon">🔒</span><h3>Secure Environment</h3><p>Your workspace is protected by DevBox Auth.</p></div>
+    </div>
+
+    <footer>&copy; 2026 DevBox Systems. Powered by AbsoraCloud Disk.</footer>
+</body>
+</html>
