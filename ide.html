@@ -4,57 +4,176 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DevBox IDE</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        .header { background: #161b22; padding: 10px 20px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
-        .notebook-title { font-size: 1.2em; font-weight: bold; }
-        .status { padding: 4px 8px; border-radius: 4px; font-size: 0.9em; background: #30363d; }
-        .status.active { background: #238636; color: white; }
-        .status.queued { background: #d29922; color: black; }
-        .status.error { background: #da3633; color: white; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        body { 
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh;
+            color: #e6edf3;
+            background: linear-gradient(-45deg, #0d1117, #161b22, #0d1520, #0a0c10);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: rgba(22, 27, 34, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .glass-panel {
+            background: rgba(13, 17, 23, 0.5);
+            backdrop-filter: blur(8px);
+        }
+
+        .header { 
+            padding: 12px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            z-index: 10;
+        }
+        .notebook-title { font-size: 1.2em; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .status { padding: 4px 10px; border-radius: 6px; font-size: 0.85em; font-weight: 500; }
+        .status.active { background: rgba(35, 134, 54, 0.8); box-shadow: 0 0 10px rgba(35, 134, 54, 0.4); border: 1px solid rgba(46, 160, 67, 0.5); color: white;}
+        .status.queued { background: rgba(210, 153, 34, 0.8); color: #000; box-shadow: 0 0 10px rgba(210, 153, 34, 0.4); border: 1px solid rgba(210, 153, 34, 0.8); }
+        .status.error { background: rgba(218, 54, 51, 0.8); box-shadow: 0 0 10px rgba(218, 54, 51, 0.4); border: 1px solid rgba(248, 81, 73, 0.5); color: white;}
         
-        .toolbar { padding: 10px 20px; background: #161b22; border-bottom: 1px solid #30363d; display: flex; gap: 10px; align-items: center; }
-        .btn { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .btn:hover { background: #30363d; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn:disabled:hover { background: #21262d; }
-        .btn-run { background: #238636; color: white; border: none; }
-        .btn-run:hover { background: #2ea043; }
-        .btn-run:disabled { background: #1a6b2b; }
-        .btn-run:disabled:hover { background: #1a6b2b; }
-        .btn-connect { background: #1f6feb; color: white; border: none; }
-        .btn-connect:hover { background: #388bfd; }
-        .btn-disconnect { background: #da3633; color: white; border: none; }
-        .btn-disconnect:hover { background: #f85149; }
-        .toolbar-separator { width: 1px; height: 24px; background: #30363d; margin: 0 4px; }
+        .toolbar { 
+            padding: 10px 20px; 
+            display: flex; 
+            gap: 10px; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .btn { 
+            background: rgba(33, 38, 45, 0.6); 
+            color: #c9d1d9; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            padding: 6px 14px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .btn:hover:not(:disabled) { background: rgba(48, 54, 61, 0.8); border-color: rgba(255,255,255,0.2); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-run { background: rgba(35, 134, 54, 0.8); border: 1px solid rgba(46, 160, 67, 0.5); color: white;}
+        .btn-run:hover:not(:disabled) { background: rgba(46, 160, 67, 0.9); box-shadow: 0 0 12px rgba(46, 160, 67, 0.4); }
+        .btn-connect { background: rgba(31, 111, 235, 0.8); border: 1px solid rgba(56, 139, 253, 0.5); color: white;}
+        .btn-connect:hover:not(:disabled) { background: rgba(56, 139, 253, 0.9); box-shadow: 0 0 12px rgba(56, 139, 253, 0.4); }
+        .btn-disconnect { background: rgba(218, 54, 51, 0.8); border: 1px solid rgba(248, 81, 73, 0.5); color: white;}
+        .btn-disconnect:hover:not(:disabled) { background: rgba(248, 81, 73, 0.9); box-shadow: 0 0 12px rgba(248, 81, 73, 0.4); }
+        .toolbar-separator { width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 8px; }
         
         .main-container { display: flex; flex: 1; overflow: hidden; }
         
-        .file-manager { width: 260px; background: #161b22; border-right: 1px solid #30363d; display: flex; flex-direction: column; }
-        .fm-header { padding: 10px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; }
-        .fm-btn { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 16px; padding: 0 4px; }
-        .fm-btn:hover { color: #c9d1d9; }
+        .file-manager { 
+            width: 260px; 
+            border-right: 1px solid rgba(255,255,255,0.08); 
+            display: flex; 
+            flex-direction: column; 
+        }
+        .fm-header { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #8b949e; }
+        .fm-btn { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; transition: all 0.2s; }
+        .fm-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
         .file-tree { flex: 1; overflow-y: auto; padding: 10px 0; }
-        .file-item { padding: 5px 15px; cursor: pointer; display: flex; justify-content: space-between; font-size: 13px; color: #8b949e; }
-        .file-item:hover { background: #30363d; color: #c9d1d9; }
+        .file-item { padding: 6px 15px; cursor: pointer; display: flex; justify-content: space-between; font-size: 13px; color: #c9d1d9; transition: background 0.1s; }
+        .file-item:hover { background: rgba(255,255,255,0.05); }
         .file-item-name { display: flex; align-items: center; gap: 8px; }
         .file-item-actions { display: none; }
         .file-item:hover .file-item-actions { display: block; }
 
-        .content { flex: 1; padding: 20px; overflow-y: auto; }
-        .cell { background: #161b22; border: 1px solid #30363d; margin-bottom: 20px; border-radius: 6px; overflow: hidden; }
-        .cell-header { background: #21262d; padding: 8px 10px; display: flex; justify-content: space-between; border-bottom: 1px solid #30363d; font-size: 14px; }
-        .cell-input textarea { width: 100%; min-height: 80px; background: #0d1117; color: #c9d1d9; border: none; padding: 10px; font-family: monospace; resize: vertical; box-sizing: border-box; outline: none; }
-        .cell-output { background: #010409; padding: 10px; color: #e6edf3; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; min-height: 20px; border-top: 1px solid #30363d; font-size: 13px; }
+        .content { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        #cells-container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 20px; }
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
-        .editor-modal { background: #161b22; width: 80%; height: 80%; border: 1px solid #30363d; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .editor-header { padding: 10px 20px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 14px; }
-        .editor-textarea { flex: 1; background: #0d1117; color: #e6edf3; border: none; padding: 20px; font-family: 'Consolas', monospace; font-size: 14px; resize: none; outline: none; }
+        .cell { 
+            width: 100%;
+            border-radius: 10px; 
+            overflow: hidden; 
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cell:focus-within {
+            box-shadow: 0 0 0 1px rgba(56, 139, 253, 0.5), 0 8px 24px rgba(0,0,0,0.3);
+            transform: translateY(-2px);
+        }
+        .cell-header { 
+            background: rgba(0,0,0,0.2); 
+            padding: 8px 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            font-size: 13px; 
+            color: #8b949e;
+        }
+        .cell-input { position: relative; }
+        .cell-input textarea { 
+            width: 100%; 
+            min-height: 80px; 
+            background: rgba(13, 17, 23, 0.3); 
+            color: #e6edf3; 
+            border: none; 
+            padding: 15px; 
+            font-family: 'Consolas', 'Courier New', monospace; 
+            font-size: 14px;
+            resize: vertical; 
+            box-sizing: border-box; 
+            outline: none; 
+            line-height: 1.5;
+        }
+        .cell-output { 
+            background: rgba(1, 4, 9, 0.8); 
+            padding: 15px; 
+            color: #a5d6ff; 
+            font-family: 'Consolas', 'Courier New', monospace; 
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            border-top: 1px solid rgba(255,255,255,0.05); 
+            font-size: 13px;
+            line-height: 1.4;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+        
+        .md-view {
+            padding: 15px 25px;
+            background: rgba(13, 17, 23, 0.3);
+            cursor: text;
+            line-height: 1.6;
+            color: #c9d1d9;
+        }
+        .md-view h1, .md-view h2, .md-view h3 { margin-top: 0; color: #e6edf3; }
+        .md-view code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        .md-view pre { background: rgba(1, 4, 9, 0.8); padding: 15px; border-radius: 6px; overflow-x: auto; border: 1px solid rgba(255,255,255,0.05); }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+        .editor-modal { width: 80%; height: 80%; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        .editor-header { padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 14px; background: rgba(0,0,0,0.2); }
+        .editor-textarea { flex: 1; background: rgba(13, 17, 23, 0.7); color: #e6edf3; border: none; padding: 20px; font-family: 'Consolas', monospace; font-size: 14px; resize: none; outline: none; line-height: 1.5; }
     </style>
 </head>
 <body>
-    <div class="header">
+    <div class="header glass">
         <div>
             <a href="dashboard.html" style="color: #58a6ff; text-decoration: none; margin-right: 15px;">&larr; Dashboard</a>
             <span class="notebook-title" id="nb-title">Loading...</span>
@@ -67,18 +186,19 @@
         </div>
     </div>
     
-    <div class="toolbar">
+    <div class="toolbar glass-panel">
         <button class="btn btn-connect" onclick="startSession()" id="btn-connect">⚡ Connect to Runtime</button>
         <button class="btn btn-disconnect" onclick="disconnectSession()" id="btn-disconnect" style="display: none;">⏹ Disconnect</button>
         <div class="toolbar-separator"></div>
-        <button class="btn" onclick="addCell()">+ Add Bash Cell</button>
+        <button class="btn" onclick="addCell('bash')">+ Code</button>
+        <button class="btn" onclick="addCell('markdown')">+ Text</button>
         <button class="btn btn-run" onclick="runAllCells()" id="btn-run-all">▶ Run All</button>
         <button class="btn" onclick="saveNotebook()">Save Notebook</button>
     </div>
 
     <div class="main-container">
         <!-- File Manager Sidebar -->
-        <div class="file-manager">
+        <div class="file-manager glass-panel">
             <div class="fm-header">
                 <span>File Explorer</span>
                 <div>
@@ -100,7 +220,7 @@
 
     <!-- File Editor Modal -->
     <div class="modal-overlay" id="editor-modal">
-        <div class="editor-modal">
+        <div class="editor-modal glass">
             <div class="editor-header">
                 <span id="editor-filename">filename.txt</span>
                 <div style="display: flex; gap: 10px;">
@@ -158,9 +278,9 @@
             if (!notebook) return;
             document.querySelectorAll('.cell').forEach(el => {
                 const id = el.dataset.id;
-                const code = el.querySelector('textarea').value;
+                const code = el.querySelector('textarea') ? el.querySelector('textarea').value : null;
                 const cell = notebook.cells.find(c => c.id === id);
-                if (cell) cell.code = code;
+                if (cell && code !== null) cell.code = code;
             });
             notebook.updatedAt = Date.now();
             
@@ -173,9 +293,9 @@
             console.log("Saved Notebook.");
         }
 
-        function addCell() {
+        function addCell(type = 'bash') {
             const cellId = 'cell_' + Date.now();
-            notebook.cells.push({ id: cellId, code: '' });
+            notebook.cells.push({ id: cellId, type: type, code: '', viewMode: false });
             renderCells();
             saveNotebook();
         }
@@ -194,34 +314,64 @@
             const container = document.getElementById('cells-container');
             container.innerHTML = '';
             notebook.cells.forEach((cell, idx) => {
+                const isMd = cell.type === 'markdown';
                 const div = document.createElement('div');
-                div.className = 'cell';
+                div.className = 'cell glass-panel';
                 div.dataset.id = cell.id;
-                div.innerHTML = `
+                
+                let inner = `
                     <div class="cell-header">
-                        <span>[${idx + 1}] Bash</span>
+                        <span>[${idx + 1}] ${isMd ? 'Markdown' : 'Bash'}</span>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn btn-run" onclick="runCell('${cell.id}')">Run</button>
+                            ${isMd && cell.viewMode ? `<button class="btn" onclick="editMarkdown('${cell.id}')">Edit</button>` : `<button class="btn btn-run" onclick="runCell('${cell.id}')">${isMd ? 'Render' : 'Run'}</button>`}
                             <button class="btn" onclick="deleteCell('${cell.id}')">Delete</button>
                         </div>
                     </div>
-                    <div class="cell-input">
-                        <textarea spellcheck="false" placeholder="Enter bash command...">${cell.code}</textarea>
-                    </div>
-                    <div class="cell-output" id="out_${cell.id}" style="display: none;"></div>
                 `;
+                
+                if (isMd && cell.viewMode) {
+                    const html = marked.parse(cell.code || '*Empty text cell*');
+                    inner += `<div class="md-view" ondblclick="editMarkdown('${cell.id}')">${html}</div>`;
+                } else {
+                    inner += `
+                        <div class="cell-input">
+                            <textarea spellcheck="false" placeholder="${isMd ? 'Enter markdown here...' : 'Enter bash command...'}">${cell.code}</textarea>
+                        </div>
+                    `;
+                }
+                
+                if (!isMd) {
+                    inner += `<div class="cell-output" id="out_${cell.id}" style="display: none;"></div>`;
+                }
+                
+                div.innerHTML = inner;
                 container.appendChild(div);
             });
         }
 
+        function editMarkdown(cellId) {
+            const cell = notebook.cells.find(c => c.id === cellId);
+            if (cell) {
+                cell.viewMode = false;
+                renderCells();
+            }
+        }
+
         function runCell(cellId) {
+            saveNotebook();
+            const cell = notebook.cells.find(c => c.id === cellId);
+            if (!cell || !cell.code.trim()) return;
+            
+            if (cell.type === 'markdown') {
+                cell.viewMode = true;
+                renderCells();
+                return;
+            }
+
             if (!isRuntimeConnected()) {
                 alert("Not connected to a runtime. Click '⚡ Connect to Runtime' first.");
                 return;
             }
-            saveNotebook();
-            const cell = notebook.cells.find(c => c.id === cellId);
-            if (!cell || !cell.code.trim()) return;
             
             const outDiv = document.getElementById('out_' + cellId);
             outDiv.style.display = 'block';
@@ -241,7 +391,7 @@
                 return;
             }
             saveNotebook();
-            runQueue = notebook.cells.filter(c => c.code.trim()).map(c => c.id);
+            runQueue = notebook.cells.filter(c => c.code.trim() && c.type !== 'markdown').map(c => c.id);
             if (runQueue.length === 0) return;
             if (!isRunningQueue) {
                 processRunQueue();
