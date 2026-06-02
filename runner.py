@@ -330,28 +330,10 @@ async def handle_client(websocket):
             except:
                 pass
 
-async def health_check(*args):
-    """Handle Cloudflare HTTP health-check pings gracefully."""
-    # websockets 13+ signature: (connection, request)
-    # older websockets signature: (path, request_headers)
-    from http import HTTPStatus
-    
-    headers = None
-    if len(args) == 2:
-        if hasattr(args[1], 'headers'):
-            headers = args[1].headers # newer versions
-        elif isinstance(args[1], dict):
-            headers = args[1] # older versions
-            
-    if headers:
-        upgrade = headers.get('Upgrade', '').lower()
-        if upgrade != 'websocket':
-            return HTTPStatus.OK, [], b"OK\n"
-            
-    return None
-
 async def main_loop():
-    server = await websockets.serve(handle_client, "0.0.0.0", PORT, process_request=health_check)
+    # We let websockets handle invalid HTTP requests normally. 
+    # It will log 'InvalidUpgrade' but keep running perfectly fine.
+    server = await websockets.serve(handle_client, "0.0.0.0", PORT)
     print(f"WebSocket server started on port {PORT}")
     await asyncio.Future()
 
