@@ -16,7 +16,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install websockets
+        run: pip install websockets==12.0
 
       - name: Install Cloudflared
         run: |
@@ -25,7 +25,7 @@ jobs:
 
       - name: Start Runner
         env:
-          API_URL: "https://devbox.42web.io/worker_api.php"
+          BASE_URL: "https://absoradevbox.vercel.app"
           RUNNER_ID: ${{ github.run_id }}
           PYTHONUNBUFFERED: "1"
         run: python runner.py
