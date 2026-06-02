@@ -11,7 +11,7 @@ import re
 import shutil
 from urllib import request, parse
 
-API_URL = os.environ.get("API_URL", "https://absora-devbox.vercel.app/api/worker_api")
+API_URL = os.environ.get("API_URL", "https://absoradevbox.vercel.app/api/worker_api")
 RUNNER_ID = os.environ.get("RUNNER_ID", "local_runner")
 RUNNER_TYPE = os.environ.get("RUNNER_TYPE", "cpu")
 PORT = 8080
