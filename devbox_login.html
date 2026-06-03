@@ -2,60 +2,367 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>DevBox Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <title>DevBox — Login</title>
+    <meta name="description" content="Sign in to DevBox — Your cloud-based IDE powered by AbsoraCloud.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        body { background: #010409; color: #c9d1d9; font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #0d1117; padding: 40px; border: 1px solid #30363d; border-radius: 8px; width: 320px; text-align: center; }
-        h1 { margin-bottom: 5px; color: #58a6ff; }
-        input { width: 100%; padding: 12px; margin: 10px 0; background: #010409; border: 1px solid #30363d; color: white; border-radius: 6px; outline: none; box-sizing: border-box; }
-        input:focus { border-color: #58a6ff; }
-        button { width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-        button:hover { background: #2ea043; }
-        .toggle-link { color: #58a6ff; font-size: 13px; cursor: pointer; margin-top: 20px; display: inline-block; }
-        .toggle-link:hover { text-decoration: underline; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #060810;
+            color: #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 20%, rgba(59, 130, 246, 0.14) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+                linear-gradient(135deg, #060810 0%, #080c18 50%, #06090f 100%);
+            z-index: 0;
+            animation: bgPulse 10s ease-in-out infinite alternate;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 40% 40% at 75% 25%, rgba(139, 92, 246, 0.09) 0%, transparent 50%),
+                radial-gradient(ellipse 50% 35% at 20% 70%, rgba(6, 182, 212, 0.07) 0%, transparent 50%);
+            z-index: 0;
+            animation: bgPulse 16s ease-in-out infinite alternate-reverse;
+        }
+        @keyframes bgPulse {
+            0% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb-1 { width: 400px; height: 400px; background: rgba(59,130,246,0.08); top: -100px; left: -100px; animation: orbFloat 20s ease-in-out infinite; }
+        .orb-2 { width: 300px; height: 300px; background: rgba(139,92,246,0.08); bottom: -50px; right: -50px; animation: orbFloat 25s ease-in-out infinite reverse; }
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0); }
+            33% { transform: translate(30px, -20px); }
+            66% { transform: translate(-20px, 30px); }
+        }
+
+        .login-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+        }
+
+        /* Logo */
+        .logo-area {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo-icon {
+            font-size: 42px;
+            display: block;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 20px rgba(59,130,246,0.5));
+            animation: logoGlow 3s ease-in-out infinite alternate;
+        }
+        @keyframes logoGlow {
+            from { filter: drop-shadow(0 0 12px rgba(59,130,246,0.4)); }
+            to   { filter: drop-shadow(0 0 28px rgba(139,92,246,0.6)); }
+        }
+        .logo-text {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .logo-sub {
+            font-size: 12px;
+            color: #475569;
+            margin-top: 4px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        /* Card */
+        .card {
+            background: rgba(10, 15, 35, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 18px;
+            padding: 36px 32px;
+            box-shadow: 0 0 0 1px rgba(59,130,246,0.05), 0 32px 64px rgba(0,0,0,0.5);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 4px;
+        }
+        .card-sub {
+            font-size: 13px;
+            color: #475569;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+
+        /* Mode tabs */
+        .mode-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 3px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(148,163,184,0.08);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-btn.active {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59,130,246,0.3);
+            box-shadow: 0 0 12px rgba(59,130,246,0.15);
+        }
+
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .form-input {
+            width: 100%;
+            padding: 11px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(148,163,184,0.15);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .form-input::placeholder { color: #334155; }
+        .form-input:focus {
+            border-color: rgba(59,130,246,0.5);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
+
+        /* Submit button */
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(59,130,246,0.8), rgba(139,92,246,0.8));
+            border: 1px solid rgba(96,165,250,0.4);
+            border-radius: 9px;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.2s;
+            letter-spacing: 0.02em;
+            position: relative;
+            overflow: hidden;
+        }
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .submit-btn:hover::before { opacity: 1; }
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(59,130,246,0.35), 0 0 0 1px rgba(96,165,250,0.3);
+        }
+        .submit-btn:active { transform: translateY(0); }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Message */
+        #msg {
+            font-size: 13px;
+            margin-top: 14px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            display: none;
+            line-height: 1.4;
+        }
+        #msg.error {
+            display: block;
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #f87171;
+        }
+        #msg.success {
+            display: block;
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.3);
+            color: #34d399;
+        }
+
+        /* Footer link */
+        .footer-note {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #334155;
+        }
+        .footer-note a { color: #3b82f6; text-decoration: none; }
+        .footer-note a:hover { text-decoration: underline; }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            color: #334155;
+            font-size: 12px;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(148,163,184,0.1);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 10px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>⚡ DevBox</h1>
-        <p style="color:#8b949e; font-size:13px; margin-bottom:25px;" id="subtitle">Login to Runner Environment</p>
-        
-        <input type="text" id="user" placeholder="Username">
-        <input type="password" id="pass" placeholder="Password">
-        <input type="password" id="invite" placeholder="Promo/Invite Code (Optional)" style="display: none;">
-        
-        <button id="action-btn" onclick="submitAuth()">Enter DevBox</button>
-        <p id="msg" style="color:#ff7b72; font-size:13px; margin-top:15px;"></p>
-        
-        <span class="toggle-link" onclick="toggleMode()" id="toggle-text">Need an account? Register</span>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="login-wrapper">
+        <div class="logo-area">
+            <span class="logo-icon">⚡</span>
+            <div class="logo-text">DevBox</div>
+            <div class="logo-sub">AbsoraCloud · Runtime IDE</div>
+        </div>
+
+        <div class="card">
+            <!-- Mode Tabs -->
+            <div class="mode-tabs">
+                <button class="tab-btn active" id="tab-login" onclick="setMode('login')">Sign In</button>
+                <button class="tab-btn" id="tab-register" onclick="setMode('register')">Register</button>
+            </div>
+
+            <div class="card-title" id="card-title">Welcome back</div>
+            <div class="card-sub" id="card-sub">Enter your credentials to access your workspace.</div>
+
+            <div class="form-group">
+                <label class="form-label" for="user">Username</label>
+                <input class="form-input" type="text" id="user" placeholder="your_username" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="pass">Password</label>
+                <input class="form-input" type="password" id="pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') submitAuth()">
+            </div>
+            <div class="form-group" id="invite-group" style="display:none;">
+                <label class="form-label" for="invite">Invite / Promo Code <span style="color:#334155;">(Optional)</span></label>
+                <input class="form-input" type="text" id="invite" placeholder="Enter invite code">
+            </div>
+
+            <button class="submit-btn" id="action-btn" onclick="submitAuth()">Enter DevBox</button>
+
+            <div id="msg"></div>
+
+            <div class="footer-note" style="margin-top:16px;">
+                <a href="index.html">← Back to Home</a>
+            </div>
+        </div>
     </div>
 
     <script>
-        let mode = 'login'; // 'login' or 'register'
+        let mode = 'login';
 
-        function toggleMode() {
-            mode = mode === 'login' ? 'register' : 'login';
-            document.getElementById('subtitle').innerText = mode === 'login' ? 'Login to Runner Environment' : 'Create a New Account';
-            document.getElementById('action-btn').innerText = mode === 'login' ? 'Enter DevBox' : 'Register';
-            document.getElementById('toggle-text').innerText = mode === 'login' ? 'Need an account? Register' : 'Already have an account? Login';
-            document.getElementById('invite').style.display = mode === 'login' ? 'none' : 'block';
-            document.getElementById('msg').innerText = '';
+        function setMode(newMode) {
+            mode = newMode;
+            document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+            document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+            document.getElementById('card-title').innerText = mode === 'login' ? 'Welcome back' : 'Create account';
+            document.getElementById('card-sub').innerText = mode === 'login'
+                ? 'Enter your credentials to access your workspace.'
+                : 'Join DevBox — your cloud IDE awaits.';
+            document.getElementById('action-btn').innerText = mode === 'login' ? 'Enter DevBox' : 'Create Account';
+            document.getElementById('invite-group').style.display = mode === 'login' ? 'none' : 'block';
+            document.getElementById('pass').setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
+            const msg = document.getElementById('msg');
+            msg.className = '';
+            msg.innerText = '';
+            msg.style.display = 'none';
+        }
+
+        // Legacy toggleMode support
+        function toggleMode() { setMode(mode === 'login' ? 'register' : 'login'); }
+
+        function showMsg(text, type) {
+            const msg = document.getElementById('msg');
+            msg.innerText = text;
+            msg.className = type;
+            msg.style.display = 'block';
         }
 
         async function submitAuth() {
-            const u = document.getElementById('user').value;
+            const u = document.getElementById('user').value.trim();
             const p = document.getElementById('pass').value;
             const invite = document.getElementById('invite').value;
-            const msg = document.getElementById('msg');
             const btn = document.getElementById('action-btn');
 
-            if(!u || !p) { msg.innerText = "Required fields missing"; return; }
+            if (!u || !p) { showMsg('Username and password are required.', 'error'); return; }
 
-            btn.innerText = "Authenticating...";
-            msg.innerText = "";
-            
+            btn.innerText = 'Authenticating...';
+            btn.disabled = true;
+
             try {
                 const payload = { username: u, password: p, op: mode };
                 if (mode === 'register') payload.invite = invite;
@@ -67,27 +374,24 @@
                 });
                 const data = await res.json();
 
-                if(data.status === 'success') {
+                if (data.status === 'success') {
                     if (mode === 'register') {
-                        msg.style.color = '#3fb950';
-                        msg.innerText = "Registration successful! You can now login.";
-                        toggleMode();
+                        showMsg('✓ Registration successful! You can now sign in.', 'success');
+                        setTimeout(() => setMode('login'), 2000);
                     } else {
                         localStorage.setItem('username', u);
-                        localStorage.setItem('devbox_session', u); // for legacy compat
-                        window.location.href = 'dashboard.html';
+                        localStorage.setItem('devbox_session', u);
+                        showMsg('✓ Signed in! Redirecting...', 'success');
+                        setTimeout(() => window.location.href = 'dashboard.html', 600);
                     }
                 } else {
-                    msg.style.color = '#ff7b72';
-                    msg.innerText = data.message || "Authentication Failed";
+                    showMsg(data.message || 'Authentication failed.', 'error');
                 }
-            } catch(e) {
-                msg.style.color = '#ff7b72';
-                msg.innerText = "Connection Error";
+            } catch (e) {
+                showMsg('Connection error. Please try again.', 'error');
             } finally {
-                if(msg.innerText !== "Registration successful! You can now login.") {
-                    btn.innerText = mode === 'login' ? 'Enter DevBox' : 'Register';
-                }
+                btn.disabled = false;
+                btn.innerText = mode === 'login' ? 'Enter DevBox' : 'Create Account';
             }
         }
     </script>

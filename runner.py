@@ -191,8 +191,6 @@ async def handle_client(websocket):
         env["HOME"] = home_dir
         env["USER"] = f"devbox_{session_id[:8]}"
         
-        import time
-        
         def start_process(cmd_list):
             for cmd in cmd_list:
                 try:
