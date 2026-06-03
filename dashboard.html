@@ -3,91 +3,531 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevBox Dashboard</title>
+    <title>DevBox — My Notebooks</title>
+    <meta name="description" content="Manage your DevBox notebooks and connect to cloud runtimes.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 { border-bottom: 1px solid #30363d; padding-bottom: 10px; }
-        .notebook-list { list-style: none; padding: 0; }
-        .notebook-item { background: #161b22; border: 1px solid #30363d; margin-bottom: 10px; padding: 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .notebook-title { font-size: 1.2em; font-weight: bold; color: #58a6ff; text-decoration: none; }
-        .notebook-title:hover { text-decoration: underline; }
-        .btn { background: #238636; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
-        .btn:hover { background: #2ea043; }
-        .btn-danger { background: #da3633; }
-        .btn-danger:hover { background: #f85149; }
-        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        #auth-status { color: #8b949e; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #475569;
+            --glass-bg: rgba(10, 15, 35, 0.6);
+            --glass-border: rgba(148, 163, 184, 0.1);
+            --glass-border-bright: rgba(148, 163, 184, 0.18);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #060810;
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 50% at 15% 10%, rgba(59,130,246,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 55% 45% at 85% 85%, rgba(139,92,246,0.10) 0%, transparent 60%),
+                linear-gradient(160deg, #060810 0%, #080c18 60%, #050710 100%);
+            z-index: 0;
+            pointer-events: none;
+            animation: bgPulse 12s ease-in-out infinite alternate;
+        }
+        @keyframes bgPulse { 0% { opacity: 1; } 100% { opacity: 0.75; } }
+
+        /* Grid */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(148,163,184,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148,163,184,0.025) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Orbs */
+        .orb { position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0; }
+        .orb-1 { width: 450px; height: 450px; background: rgba(59,130,246,0.07); top: -120px; left: -120px; animation: orbDrift 22s ease-in-out infinite; }
+        .orb-2 { width: 350px; height: 350px; background: rgba(139,92,246,0.06); bottom: -80px; right: -80px; animation: orbDrift 28s ease-in-out infinite reverse; }
+        @keyframes orbDrift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, -25px); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.35); }
+
+        /* Layout */
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Header ── */
+        .header {
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(6, 8, 16, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .logo-icon { font-size: 20px; filter: drop-shadow(0 0 8px rgba(59,130,246,0.6)); }
+        .logo-text {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(59,130,246,0.08);
+            border: 1px solid rgba(59,130,246,0.2);
+            padding: 5px 12px 5px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #60a5fa;
+            font-weight: 500;
+        }
+        .user-avatar {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: white;
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, rgba(59,130,246,0.8), rgba(139,92,246,0.8));
+            border-color: rgba(96,165,250,0.4);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(59,130,246,0.35);
+        }
+        .btn-ghost {
+            background: rgba(255,255,255,0.04);
+            border-color: var(--glass-border-bright);
+            color: var(--text-secondary);
+        }
+        .btn-ghost:hover {
+            background: rgba(255,255,255,0.07);
+            color: var(--text-primary);
+            border-color: rgba(148,163,184,0.28);
+        }
+        .btn-danger {
+            background: rgba(239,68,68,0.12);
+            border-color: rgba(239,68,68,0.3);
+            color: #f87171;
+        }
+        .btn-danger:hover {
+            background: rgba(239,68,68,0.2);
+            border-color: rgba(248,113,113,0.5);
+            box-shadow: 0 4px 14px rgba(239,68,68,0.25);
+        }
+
+        /* ── Main Content ── */
+        .main { flex: 1; padding: 40px 28px; max-width: 900px; margin: 0 auto; width: 100%; }
+
+        /* ── Page Title ── */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 32px;
+            gap: 16px;
+        }
+        .page-title-area {}
+        .page-title {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .page-subtitle { font-size: 13px; color: var(--text-muted); }
+
+        /* ── Search/Filter ── */
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .search-input {
+            flex: 1;
+            padding: 9px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border-bright);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: var(--transition);
+        }
+        .search-input::placeholder { color: #334155; }
+        .search-input:focus {
+            border-color: rgba(59,130,246,0.4);
+            background: rgba(0,0,0,0.4);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.08);
+        }
+
+        /* ── Notebook List ── */
+        #list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+
+        .notebook-item {
+            background: rgba(10, 15, 35, 0.55);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            transition: var(--transition);
+            animation: fadeInUp 0.3s ease both;
+        }
+        .notebook-item:hover {
+            border-color: rgba(59,130,246,0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(59,130,246,0.07);
+        }
+        .nb-info { flex: 1; min-width: 0; }
+        .nb-title-link {
+            font-size: 16px;
+            font-weight: 700;
+            color: #60a5fa;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+            transition: color 0.2s;
+        }
+        .nb-title-link:hover { color: #93c5fd; }
+        .nb-title-link .nb-icon { font-size: 18px; }
+        .nb-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .nb-meta-item { display: flex; align-items: center; gap: 5px; }
+        .nb-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+        /* ── Empty State ── */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+        }
+        .empty-icon { font-size: 56px; display: block; margin-bottom: 20px; opacity: 0.4; }
+        .empty-title { font-size: 18px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+        .empty-desc { font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: rgba(8, 12, 28, 0.95);
+            border: 1px solid rgba(59,130,246,0.2);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 0 60px rgba(59,130,246,0.12), 0 40px 80px rgba(0,0,0,0.6);
+            animation: fadeInUp 0.25s ease;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+        .modal-input {
+            width: 100%;
+            padding: 11px 14px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--glass-border-bright);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: var(--transition);
+            margin-bottom: 16px;
+        }
+        .modal-input:focus { border-color: rgba(59,130,246,0.5); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header-actions">
-            <h1>My Notebooks</h1>
-            <div>
-                <span id="auth-status"></span>
-                <button class="btn" onclick="createNotebook()">+ New Notebook</button>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="page-wrapper">
+        <!-- Header -->
+        <header class="header">
+            <a href="index.html" class="header-logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">DevBox</span>
+            </a>
+            <div class="header-right">
+                <div class="user-chip">
+                    <div class="user-avatar" id="user-avatar">?</div>
+                    <span id="auth-status">Loading...</span>
+                </div>
+                <button class="btn btn-ghost" onclick="logout()">Sign out</button>
+            </div>
+        </header>
+
+        <!-- Main -->
+        <main class="main">
+            <div class="page-header">
+                <div class="page-title-area">
+                    <h1 class="page-title">My Notebooks</h1>
+                    <p class="page-subtitle" id="nb-count">Loading...</p>
+                </div>
+                <button class="btn btn-primary" onclick="openCreateModal()">
+                    ＋ New Notebook
+                </button>
+            </div>
+
+            <div class="search-bar">
+                <input class="search-input" type="text" id="search-input" placeholder="🔍  Search notebooks..." oninput="filterNotebooks()">
+            </div>
+
+            <ul id="list"></ul>
+        </main>
+    </div>
+
+    <!-- Create Modal -->
+    <div class="modal-overlay" id="create-modal" onclick="handleModalClick(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-title">✨ New Notebook</div>
+            <div class="modal-sub">Give your notebook a descriptive name.</div>
+            <input class="modal-input" type="text" id="nb-name-input" placeholder="e.g. Data Analysis 2026" onkeydown="if(event.key==='Enter') confirmCreate()">
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeCreateModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmCreate()">Create →</button>
             </div>
         </div>
-        <ul class="notebook-list" id="list"></ul>
     </div>
 
     <script>
         const username = localStorage.getItem('username');
-        if (!username) {
+        if (!username) { window.location.href = 'devbox_login.html'; }
+
+        let allNotebooks = [];
+
+        // Setup user chip
+        document.getElementById('auth-status').innerText = username;
+        document.getElementById('user-avatar').innerText = username.charAt(0).toUpperCase();
+
+        function logout() {
+            localStorage.removeItem('username');
+            localStorage.removeItem('devbox_session');
             window.location.href = 'devbox_login.html';
-        } else {
-            document.getElementById('auth-status').innerText = 'Logged in as ' + username;
         }
 
         function loadNotebooks() {
+            allNotebooks = JSON.parse(localStorage.getItem('notebooks') || '[]');
+            // Sort newest first
+            allNotebooks.sort((a, b) => b.updatedAt - a.updatedAt);
+            renderNotebooks(allNotebooks);
+        }
+
+        function filterNotebooks() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            const filtered = q ? allNotebooks.filter(nb => nb.name.toLowerCase().includes(q)) : allNotebooks;
+            renderNotebooks(filtered);
+        }
+
+        function renderNotebooks(notebooks) {
             const list = document.getElementById('list');
+            const countEl = document.getElementById('nb-count');
+
             list.innerHTML = '';
-            const notebooks = JSON.parse(localStorage.getItem('notebooks') || '[]');
-            
+            countEl.innerText = `${notebooks.length} notebook${notebooks.length !== 1 ? 's' : ''}`;
+
             if (notebooks.length === 0) {
-                list.innerHTML = '<li>No notebooks found. Create one!</li>';
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <span class="empty-icon">📓</span>
+                        <div class="empty-title">No notebooks yet</div>
+                        <div class="empty-desc">Create your first notebook to start running code in the cloud.</div>
+                        <button class="btn btn-primary" onclick="openCreateModal()">＋ Create your first notebook</button>
+                    </div>`;
+                return;
             }
 
-            notebooks.forEach(nb => {
+            notebooks.forEach((nb, i) => {
                 const li = document.createElement('li');
                 li.className = 'notebook-item';
-                
-                // For simplicity, we just link to ide.html with the ID
+                li.style.animationDelay = `${i * 0.05}s`;
+
+                const date = new Date(nb.updatedAt);
+                const timeAgo = getTimeAgo(date);
+                const cellCount = (nb.cells || []).length;
+
                 li.innerHTML = `
-                    <a href="ide.html?id=${nb.id}" class="notebook-title">${nb.name}</a>
-                    <span>
-                        <small style="color:#8b949e; margin-right: 15px;">Last modified: ${new Date(nb.updatedAt).toLocaleString()}</small>
-                        <button class="btn btn-danger" onclick="deleteNotebook('${nb.id}')">Delete</button>
-                    </span>
+                    <div class="nb-info">
+                        <a href="ide.html?id=${nb.id}" class="nb-title-link">
+                            <span class="nb-icon">📓</span>
+                            ${escapeHtml(nb.name)}
+                        </a>
+                        <div class="nb-meta">
+                            <span class="nb-meta-item">🕐 ${timeAgo}</span>
+                            <span class="nb-meta-item">📋 ${cellCount} cell${cellCount !== 1 ? 's' : ''}</span>
+                        </div>
+                    </div>
+                    <div class="nb-actions">
+                        <a href="ide.html?id=${nb.id}" class="btn btn-ghost">Open →</a>
+                        <button class="btn btn-danger" onclick="deleteNotebook('${nb.id}')">🗑</button>
+                    </div>
                 `;
                 list.appendChild(li);
             });
         }
 
-        function createNotebook() {
-            const name = prompt("Enter notebook name:");
-            if (!name) return;
-            
+        // Modal
+        function openCreateModal() {
+            document.getElementById('create-modal').classList.add('open');
+            setTimeout(() => document.getElementById('nb-name-input').focus(), 100);
+        }
+        function closeCreateModal() {
+            document.getElementById('create-modal').classList.remove('open');
+            document.getElementById('nb-name-input').value = '';
+        }
+        function handleModalClick(e) {
+            if (e.target === document.getElementById('create-modal')) closeCreateModal();
+        }
+
+        function confirmCreate() {
+            const name = document.getElementById('nb-name-input').value.trim();
+            if (!name) { document.getElementById('nb-name-input').focus(); return; }
+            createNotebook(name);
+            closeCreateModal();
+        }
+
+        function createNotebook(name) {
             const notebooks = JSON.parse(localStorage.getItem('notebooks') || '[]');
             const id = 'nb_' + Date.now();
-            notebooks.push({
-                id: id,
-                name: name,
-                cells: [],
-                updatedAt: Date.now()
-            });
+            notebooks.push({ id, name, cells: [], updatedAt: Date.now() });
             localStorage.setItem('notebooks', JSON.stringify(notebooks));
             loadNotebooks();
+            // Open the new notebook
+            setTimeout(() => window.location.href = `ide.html?id=${id}`, 100);
         }
 
         function deleteNotebook(id) {
-            if (!confirm("Are you sure you want to delete this notebook?")) return;
+            if (!confirm('Delete this notebook? This cannot be undone.')) return;
             let notebooks = JSON.parse(localStorage.getItem('notebooks') || '[]');
             notebooks = notebooks.filter(nb => nb.id !== id);
             localStorage.setItem('notebooks', JSON.stringify(notebooks));
             loadNotebooks();
         }
+
+        // Helpers
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function getTimeAgo(date) {
+            const secs = Math.floor((Date.now() - date.getTime()) / 1000);
+            if (secs < 60) return 'just now';
+            if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+            if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+            if (secs < 604800) return `${Math.floor(secs / 86400)}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Keyboard shortcut
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openCreateModal(); }
+            if (e.key === 'Escape') closeCreateModal();
+        });
 
         loadNotebooks();
     </script>

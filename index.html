@@ -3,56 +3,666 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevBox - AbsoraCloud Disk Development</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>DevBox — Code Anywhere. Run Everywhere.</title>
+    <meta name="description" content="DevBox is a powerful cloud-based IDE connected to AbsoraCloud Disk. Run scripts and manage files directly from your browser.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #0d1117; --card-bg: #161b22; --text: #c9d1d9; --accent: #238636; --accent-hover: #2ea043; --blue: #58a6ff; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        
-        /* NAVBAR */
-        nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; max-width: 1200px; margin: 0 auto; }
-        .logo { font-size: 24px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; }
-        .logo span { color: var(--blue); }
-        .nav-links button { background: transparent; border: 1px solid #30363d; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
-        .nav-links button:hover { border-color: var(--text); }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* HERO */
-        .hero { text-align: center; padding: 100px 20px; max-width: 800px; margin: 0 auto; }
-        h1 { font-size: 64px; margin-bottom: 20px; line-height: 1.1; background: linear-gradient(90deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        p.subtitle { font-size: 20px; color: #8b949e; margin-bottom: 40px; line-height: 1.6; }
-        
-        .cta-btn { background: var(--accent); color: white; padding: 16px 32px; font-size: 18px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.2s, background 0.2s; text-decoration: none; display: inline-block; }
-        .cta-btn:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        :root {
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #475569;
+            --glass-bg: rgba(10, 15, 35, 0.6);
+            --glass-border: rgba(148, 163, 184, 0.1);
+            --glass-border-bright: rgba(148, 163, 184, 0.18);
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-        /* FEATURES */
-        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; max-width: 1200px; margin: 50px auto; padding: 0 20px; }
-        .card { background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid #30363d; transition: 0.3s; }
-        .card:hover { border-color: var(--blue); transform: translateY(-5px); }
-        .card h3 { color: white; margin-top: 0; font-size: 20px; }
-        .card p { color: #8b949e; line-height: 1.5; }
-        .icon { font-size: 30px; margin-bottom: 15px; display: block; }
+        html { scroll-behavior: smooth; }
 
-        footer { text-align: center; padding: 50px; border-top: 1px solid #30363d; margin-top: 100px; color: #484f58; font-size: 14px; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #060810;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ── Animated Background ── */
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .bg-layer::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 50% at 15% 10%, rgba(59,130,246,0.13) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 45% at 85% 85%, rgba(139,92,246,0.11) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(6,182,212,0.05) 0%, transparent 70%),
+                linear-gradient(160deg, #060810 0%, #080c18 60%, #050710 100%);
+            animation: bgShift 14s ease-in-out infinite alternate;
+        }
+        @keyframes bgShift {
+            0%   { opacity: 1; }
+            100% { opacity: 0.75; }
+        }
+
+        /* Grid overlay */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(148,163,184,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148,163,184,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb-1 { width: 500px; height: 500px; background: rgba(59,130,246,0.07); top: -150px; left: -150px; animation: orbDrift 22s ease-in-out infinite; }
+        .orb-2 { width: 400px; height: 400px; background: rgba(139,92,246,0.07); bottom: -100px; right: -100px; animation: orbDrift 28s ease-in-out infinite reverse; }
+        .orb-3 { width: 300px; height: 300px; background: rgba(6,182,212,0.05); top: 50%; left: 60%; animation: orbDrift 18s ease-in-out infinite 4s; }
+        @keyframes orbDrift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(40px, -30px) scale(1.05); }
+            66% { transform: translate(-20px, 40px) scale(0.95); }
+        }
+
+        /* ── Layout ── */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 1; }
+
+        /* ── Navbar ── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 16px 0;
+            transition: var(--transition);
+        }
+        nav.scrolled {
+            background: rgba(6, 8, 16, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .logo-icon {
+            font-size: 22px;
+            filter: drop-shadow(0 0 10px rgba(59,130,246,0.6));
+        }
+        .logo-text {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .logo-badge {
+            font-size: 10px;
+            font-weight: 700;
+            color: #475569;
+            background: rgba(148,163,184,0.08);
+            border: 1px solid rgba(148,163,184,0.12);
+            padding: 2px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .nav-links { display: flex; align-items: center; gap: 10px; }
+        .btn-nav {
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--glass-border-bright);
+            color: var(--text-secondary);
+        }
+        .btn-ghost:hover {
+            background: rgba(148,163,184,0.07);
+            color: var(--text-primary);
+            border-color: rgba(148,163,184,0.3);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, rgba(59,130,246,0.85), rgba(139,92,246,0.85));
+            border: 1px solid rgba(96,165,250,0.4);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(59,130,246,0.35);
+        }
+
+        /* ── Hero ── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 20px 80px;
+        }
+
+        .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.25);
+            color: #60a5fa;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 20px;
+            margin-bottom: 28px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            animation: fadeInUp 0.6s ease;
+        }
+        .eyebrow-dot {
+            width: 6px; height: 6px;
+            background: #3b82f6;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(59,130,246,0.8);
+            animation: pulseDot 2s ease-in-out infinite;
+        }
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .hero-title {
+            font-size: clamp(42px, 7vw, 80px);
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -0.04em;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.6s ease 0.1s both;
+        }
+        .hero-title .line-1 { display: block; color: var(--text-primary); }
+        .hero-title .line-2 {
+            display: block;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(16px, 2.2vw, 20px);
+            color: var(--text-secondary);
+            max-width: 600px;
+            line-height: 1.65;
+            margin-bottom: 44px;
+            font-weight: 400;
+            animation: fadeInUp 0.6s ease 0.2s both;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 0.6s ease 0.3s both;
+        }
+        .cta-primary {
+            padding: 14px 32px;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: 1px solid rgba(96,165,250,0.4);
+            color: white;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+            box-shadow: 0 4px 20px rgba(59,130,246,0.3);
+            font-family: 'Inter', sans-serif;
+        }
+        .cta-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(59,130,246,0.45);
+        }
+        .cta-secondary {
+            padding: 14px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border-bright);
+            color: var(--text-secondary);
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .cta-secondary:hover {
+            background: rgba(255,255,255,0.07);
+            color: var(--text-primary);
+            border-color: rgba(148,163,184,0.3);
+        }
+
+        /* Terminal preview */
+        .hero-preview {
+            margin-top: 72px;
+            width: 100%;
+            max-width: 780px;
+            animation: fadeInUp 0.7s ease 0.45s both;
+        }
+        .terminal {
+            background: rgba(2, 4, 12, 0.85);
+            border: 1px solid rgba(59,130,246,0.2);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: 0 0 60px rgba(59,130,246,0.12), 0 40px 80px rgba(0,0,0,0.5);
+        }
+        .terminal-bar {
+            background: rgba(10, 15, 30, 0.9);
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(148,163,184,0.07);
+        }
+        .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .t-red   { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.5); }
+        .t-amber { background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.5); }
+        .t-green { background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,0.5); }
+        .terminal-title {
+            margin-left: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #334155;
+        }
+        .terminal-body {
+            padding: 24px 28px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            color: #4ade80;
+        }
+        .t-prompt { color: #60a5fa; }
+        .t-cmd { color: #e2e8f0; }
+        .t-out { color: #4ade80; }
+        .t-comment { color: #334155; }
+        .t-cursor {
+            display: inline-block;
+            width: 8px; height: 14px;
+            background: #3b82f6;
+            vertical-align: text-bottom;
+            animation: blink 1.2s step-end infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* ── Features ── */
+        .section {
+            padding: 100px 0;
+            position: relative;
+            z-index: 1;
+        }
+        .section-label {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #3b82f6;
+            margin-bottom: 14px;
+        }
+        .section-title {
+            text-align: center;
+            font-size: clamp(28px, 4vw, 42px);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+            margin-bottom: 14px;
+        }
+        .section-sub {
+            text-align: center;
+            font-size: 16px;
+            color: var(--text-secondary);
+            max-width: 500px;
+            margin: 0 auto 56px;
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: rgba(10, 15, 35, 0.55);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .feature-card:hover {
+            border-color: rgba(59,130,246,0.25);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(59,130,246,0.08);
+        }
+        .feature-card:hover::before { opacity: 1; }
+
+        .feature-icon {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 18px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+        .feature-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            letter-spacing: -0.01em;
+        }
+        .feature-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+
+        /* ── Stats ── */
+        .stats-section {
+            padding: 60px 0;
+            position: relative;
+            z-index: 1;
+        }
+        .stats-glass {
+            background: rgba(10, 15, 35, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 48px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 40px;
+            text-align: center;
+        }
+        .stat-item {}
+        .stat-num {
+            font-size: 40px;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        .stat-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+
+        /* ── Footer ── */
+        footer {
+            position: relative;
+            z-index: 1;
+            border-top: 1px solid var(--glass-border);
+            padding: 40px 0;
+            text-align: center;
+            color: #334155;
+            font-size: 13px;
+        }
+        footer a { color: #3b82f6; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.35); }
+
+        /* ── Animations ── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeInUp 0.6s ease both; }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .stats-glass { padding: 32px 20px; }
+            .nav-links .btn-ghost { display: none; }
+        }
     </style>
 </head>
 <body>
-    <nav>
-        <div class="logo">⚡ <span>DevBox</span></div>
-        <div class="nav-links"><button onclick="window.location.href='devbox_login.html'">Login</button></div>
+    <div class="bg-layer"></div>
+    <div class="bg-grid"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <!-- Navbar -->
+    <nav id="navbar">
+        <div class="container">
+            <div class="nav-inner">
+                <a href="index.html" class="logo">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">DevBox</span>
+                    <span class="logo-badge">Beta</span>
+                </a>
+                <div class="nav-links">
+                    <a href="#features" class="btn-nav btn-ghost">Features</a>
+                    <a href="devbox_login.html" class="btn-nav btn-primary">Launch IDE →</a>
+                </div>
+            </div>
+        </div>
     </nav>
 
-    <div class="hero">
-        <h1>Code Anywhere.<br>Run Everywhere.</h1>
-        <p class="subtitle">A powerful cloud-based IDE connected to your AbsoraCloud Disk storage. Run scripts and manage files directly from your browser.</p>
-        <a href="devbox_login.html" class="cta-btn">Get Started</a>
-    </div>
+    <!-- Hero -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-eyebrow">
+                <span class="eyebrow-dot"></span>
+                Powered by AbsoraCloud Disk
+            </div>
 
-    <div class="features">
-        <div class="card"><span class="icon">☁️</span><h3>AbsoraCloud Integration</h3><p>Seamlessly connect to your private AbsoraCloud Disk storage nodes.</p></div>
-        <div class="card"><span class="icon">🚀</span><h3>Best High Quality Server</h3><p>Execute code using our professional-grade, high-performance server infrastructure.</p></div>
-        <div class="card"><span class="icon">🔒</span><h3>Secure Environment</h3><p>Your workspace is protected by DevBox Auth.</p></div>
-    </div>
+            <h1 class="hero-title">
+                <span class="line-1">Code Anywhere.</span>
+                <span class="line-2">Run Everywhere.</span>
+            </h1>
 
-    <footer>&copy; 2026 DevBox Systems. Powered by AbsoraCloud Disk.</footer>
+            <p class="hero-subtitle">
+                A powerful cloud-based IDE connected to your AbsoraCloud Disk storage.
+                Run scripts, manage files, and collaborate — directly from your browser.
+            </p>
+
+            <div class="hero-cta">
+                <a href="devbox_login.html" class="cta-primary">
+                    ⚡ Get Started Free
+                </a>
+                <a href="#features" class="cta-secondary">
+                    Learn more ↓
+                </a>
+            </div>
+
+            <!-- Terminal Preview -->
+            <div class="hero-preview">
+                <div class="terminal">
+                    <div class="terminal-bar">
+                        <span class="t-dot t-red"></span>
+                        <span class="t-dot t-amber"></span>
+                        <span class="t-dot t-green"></span>
+                        <span class="terminal-title">devbox — bash — 80×24</span>
+                    </div>
+                    <div class="terminal-body">
+                        <div><span class="t-prompt">devbox@cloud:~$ </span><span class="t-cmd">python3 train.py --epochs 50</span></div>
+                        <div><span class="t-out">✓ GPU detected: NVIDIA T4 (16GB)</span></div>
+                        <div><span class="t-out">✓ Dataset loaded: 120,000 samples</span></div>
+                        <div><span class="t-out">  Epoch 1/50 ━━━━━━━━━━ 100% | loss: 0.4821</span></div>
+                        <div><span class="t-out">  Epoch 2/50 ━━━━━━━━━━ 100% | loss: 0.3104</span></div>
+                        <div><span class="t-comment"># Running in your browser. No setup required.</span></div>
+                        <div><span class="t-prompt">devbox@cloud:~$ </span><span class="t-cursor"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-label">Features</div>
+            <h2 class="section-title">Everything you need to build</h2>
+            <p class="section-sub">A full-featured development environment that lives in the cloud.</p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">☁️</span>
+                    <div class="feature-title">AbsoraCloud Integration</div>
+                    <p class="feature-desc">Seamlessly connect to your private AbsoraCloud Disk storage nodes. Your files follow you everywhere.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🚀</span>
+                    <div class="feature-title">High-Performance Servers</div>
+                    <p class="feature-desc">Execute code on professional-grade, high-performance infrastructure with near-zero latency.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🔒</span>
+                    <div class="feature-title">Secure Environment</div>
+                    <p class="feature-desc">Each session runs in an isolated container with advanced exploit detection and automatic banning.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📝</span>
+                    <div class="feature-title">Notebook Interface</div>
+                    <p class="feature-desc">Mix code cells and markdown text cells in a Google Colab-style notebook — perfect for documentation.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📁</span>
+                    <div class="feature-title">File Explorer</div>
+                    <p class="feature-desc">Browse, edit, create and delete files directly in your cloud workspace without leaving the IDE.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">⚡</span>
+                    <div class="feature-title">Instant Connect</div>
+                    <p class="feature-desc">One click to spin up a live runtime. No configuration, no local installs. Just open and code.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-glass">
+                <div class="stat-item">
+                    <div class="stat-num">20+</div>
+                    <div class="stat-label">Concurrent Sessions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">0ms</div>
+                    <div class="stat-label">Setup Time</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">100%</div>
+                    <div class="stat-label">Browser Native</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">∞</div>
+                    <div class="stat-label">Possibilities</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>© 2026 DevBox Systems · Powered by <a href="#">AbsoraCloud Disk</a> · <a href="admin.html">Admin</a></p>
+        </div>
+    </footer>
+
+    <script>
+        // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            navbar.classList.toggle('scrolled', window.scrollY > 20);
+        });
+
+        // Intersection observer for fade-in animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.style.animation = 'fadeInUp 0.6s ease both';
+                    observer.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.feature-card').forEach((el, i) => {
+            el.style.opacity = '0';
+            el.style.animationDelay = `${i * 0.08}s`;
+            observer.observe(el);
+        });
+    </script>
 </body>
 </html>
