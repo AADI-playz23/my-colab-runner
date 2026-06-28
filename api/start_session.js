@@ -1,6 +1,7 @@
 import pool from './db.js';
 import { kv } from '@vercel/kv';
 import crypto from 'crypto';
+import { requireAuth } from './_lib/middleware.js';
 
 const PLAN_LIMITS = {
   free: { session_mins: 60, weekly_mins: 600, queue: 'normal' },
