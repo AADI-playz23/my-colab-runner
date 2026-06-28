@@ -1,19 +1,13 @@
 import pool from './db.js';
+import { requireAdmin } from './_lib/middleware.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ status: "error", message: "Method not allowed" });
   
-  // Protect API: require admin username to be passed (ideally verified by token in real app, but this relies on localstorage on frontend)
-  const username = req.query.admin_user;
-  
-  if (!username) return res.status(403).json({ status: "error", message: "Unauthorized" });
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
 
   try {
-    const adminCheck = await pool.query('SELECT is_admin FROM users WHERE username = $1', [username]);
-    if (adminCheck.rows.length === 0 || !adminCheck.rows[0].is_admin) {
-      return res.status(403).json({ status: "error", message: "Unauthorized" });
-    }
-
     // Fetch VMs
     const vms = await pool.query('SELECT id, active_users, last_heartbeat FROM vms ORDER BY last_heartbeat DESC');
     
