@@ -1,18 +1,25 @@
 import pool from './db.js';
+import { requireAuth } from './_lib/middleware.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ status: "error", message: "Method not allowed" });
   
+  const user = requireAuth(req, res);
+  if (!user) return;
+
   const id = req.query.id || '';
   if (!id) return res.status(400).json({ status: "error", message: "Missing session ID" });
   
   try {
-    const result = await pool.query("SELECT status, worker_url, plan, started_at, timeout_secs FROM sessions WHERE id = $1", [id]);
+    const result = await pool.query("SELECT status, worker_url, plan, started_at, timeout_secs, username FROM sessions WHERE id = $1", [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ status: "error", message: "Session not found" });
     }
     
     const session = result.rows[0];
+    if (session.username !== user.username && !user.is_admin) {
+      return res.status(403).json({ status: "error", message: "Forbidden. Access denied." });
+    }
     
     // Server-side timeout enforcement: if session is active and has exceeded its timeout, close it
     if (session.status === 'active' && session.started_at && session.timeout_secs) {
