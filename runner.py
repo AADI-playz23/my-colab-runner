@@ -31,6 +31,7 @@ MAX_SLOTS = 20
 active_sessions = {}
 worker_url = None
 registered_vm_id = None
+heartbeat_started = False
 
 def api_call(op, payload=None, url=None):
     try:
@@ -84,38 +85,47 @@ def heartbeat_loop():
         time.sleep(30)
 
 def start_tunnel():
-    global worker_url, registered_vm_id
+    global worker_url, registered_vm_id, heartbeat_started
     print("Starting cloudflared tunnel...")
-    tunnel_proc = subprocess.Popen(
-        ["cloudflared", "tunnel", "--url", f"http://localhost:{PORT}"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True
-    )
     
-    def log_and_consume():
-        global worker_url, registered_vm_id
-        for line in tunnel_proc.stdout:
-            print(f"[TUNNEL] {line.strip()}")
-            if not worker_url:
-                match = re.search(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com', line)
-                if match:
-                    url = match.group(0)
-                    worker_url = url.replace("https://", "wss://")
-                    print(f"Tunnel established: {worker_url}")
-                    
-                    # Register VM with the Backend
-                    reg_result = api_call("register_vm", {
-                        "vm_id": RUNNER_ID,
-                        "worker_url": worker_url
-                    })
-                    registered_vm_id = reg_result.get("vm_id", RUNNER_ID)
-                    print(f"Registered as VM: {registered_vm_id}")
-                    
-                    # Start Heartbeat thread
-                    threading.Thread(target=heartbeat_loop, daemon=True).start()
-
-    threading.Thread(target=log_and_consume, daemon=True).start()
+    while True:
+        try:
+            tunnel_proc = subprocess.Popen(
+                ["cloudflared", "tunnel", "--url", f"http://localhost:{PORT}"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True
+            )
+            
+            for line in tunnel_proc.stdout:
+                print(f"[TUNNEL] {line.strip()}")
+                if not worker_url:
+                    match = re.search(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com', line)
+                    if match:
+                        url = match.group(0)
+                        worker_url = url.replace("https://", "wss://")
+                        print(f"Tunnel established: {worker_url}")
+                        
+                        # Register VM with the Backend
+                        reg_result = api_call("register_vm", {
+                            "vm_id": RUNNER_ID,
+                            "worker_url": worker_url
+                        })
+                        registered_vm_id = reg_result.get("vm_id", RUNNER_ID)
+                        print(f"Registered as VM: {registered_vm_id}")
+                        
+                        # Start Heartbeat thread once
+                        if not heartbeat_started:
+                            heartbeat_started = True
+                            threading.Thread(target=heartbeat_loop, daemon=True).start()
+            
+            tunnel_proc.wait()
+            print(f"[TUNNEL] Process exited with code {tunnel_proc.returncode}. Retrying in 5 seconds...")
+        except Exception as e:
+            print(f"[TUNNEL] Exception in tunnel thread: {e}. Retrying in 5 seconds...")
+        
+        worker_url = None
+        time.sleep(5)
 
 def get_dir_size(path):
     total = 0
