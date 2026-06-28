@@ -340,6 +340,59 @@
             from { opacity: 0; transform: translateY(12px); }
             to   { opacity: 1; transform: translateY(0); }
         }
+
+        /* --- RESPONSIVE MEDIA QUERIES --- */
+        @media (max-width: 680px) {
+            .header {
+                padding: 10px 16px;
+            }
+            .header-logo .logo-text {
+                font-size: 16px;
+            }
+            .main {
+                padding: 24px 16px;
+            }
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+                margin-bottom: 24px;
+            }
+            .page-header button {
+                width: 100%;
+                justify-content: center;
+                padding: 10px;
+            }
+            .page-title {
+                font-size: 22px;
+            }
+            .notebook-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 16px;
+                padding: 16px;
+                border-radius: 12px;
+            }
+            .nb-meta {
+                flex-wrap: wrap;
+                gap: 8px 12px;
+            }
+            .nb-actions {
+                display: flex;
+                gap: 8px;
+            }
+            .nb-actions a {
+                flex: 1;
+                justify-content: center;
+            }
+            .nb-actions button {
+                padding: 8px 16px;
+            }
+            .modal {
+                padding: 24px 20px;
+                border-radius: 16px;
+            }
+        }
     </style>
 </head>
 <body>
