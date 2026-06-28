@@ -20,6 +20,18 @@ export default async function handler(req, res) {
     if (session.username !== user.username && !user.is_admin) {
       return res.status(403).json({ status: "error", message: "Forbidden. Access denied." });
     }
+
+    // Verify if the VM hosting this session is still alive
+    if (session.status === 'active' && session.worker_url) {
+      const recent_time = now - 120;
+      const vmAlive = await pool.query("SELECT id FROM vms WHERE worker_url = $1 AND last_heartbeat > $2", [session.worker_url, recent_time]);
+      if (vmAlive.rows.length === 0) {
+        await pool.query("UPDATE sessions SET status = 'closed' WHERE id = $1", [id]);
+        await pool.query("UPDATE users SET session_active = NULL WHERE username = $1", [session.username]);
+        session.status = 'closed';
+        session.worker_url = null;
+      }
+    }
     
     // Server-side timeout enforcement: if session is active and has exceeded its timeout, close it
     if (session.status === 'active' && session.started_at && session.timeout_secs) {
