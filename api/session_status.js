@@ -11,6 +11,7 @@ export default async function handler(req, res) {
   if (!id) return res.status(400).json({ status: "error", message: "Missing session ID" });
   
   try {
+    const now = Math.floor(Date.now() / 1000);
     const result = await pool.query("SELECT status, worker_url, plan, started_at, timeout_secs, username FROM sessions WHERE id = $1", [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ status: "error", message: "Session not found" });
@@ -35,7 +36,6 @@ export default async function handler(req, res) {
     
     // Server-side timeout enforcement: if session is active and has exceeded its timeout, close it
     if (session.status === 'active' && session.started_at && session.timeout_secs) {
-      const now = Math.floor(Date.now() / 1000);
       const elapsed = now - parseInt(session.started_at);
       if (elapsed >= parseInt(session.timeout_secs)) {
         await pool.query("UPDATE sessions SET status = 'expired' WHERE id = $1", [id]);
