@@ -43,10 +43,34 @@ export default async function handler(req, res) {
       )
     `);
 
-    // Add is_admin and banned columns if they don't exist (Migrations)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS warns (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) NOT NULL,
+        service VARCHAR(50) NOT NULL,
+        reason TEXT NOT NULL,
+        screenshot_proof TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bans (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) NOT NULL,
+        service VARCHAR(50) NOT NULL,
+        reason TEXT NOT NULL,
+        banned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(username, service)
+      )
+    `);
+
+    // Add is_admin, banned and tos_accepted columns if they don't exist (Migrations)
     try {
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS banned BOOLEAN DEFAULT FALSE`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS tos_accepted BOOLEAN DEFAULT TRUE`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until BIGINT DEFAULT 0`);
     } catch (e) {
       // Ignore column already exists errors if they pop up
     }
