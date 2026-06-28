@@ -78,18 +78,35 @@ async function triggerVM() {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ status: "error", message: "Method not allowed" });
   
-  const u = req.body.username || '';
-  
-  if (!u) return res.status(400).json({ status: "error", message: "Missing username" });
+  const user = requireAuth(req, res);
+  if (!user) return;
+
+  const u = user.username;
   
   try {
     const usage = await getUserUsage(u);
     if (!usage) return res.status(404).json({ status: "error", message: "User not found" });
     
-    // Check if banned
-    const uResInfo = await pool.query('SELECT banned, session_active FROM users WHERE username = $1', [u]);
-    if (uResInfo.rows.length > 0 && uResInfo.rows[0].banned) {
-      return res.status(403).json({ status: "error", message: "Account has been banned for TOS violations." });
+    // Check if banned or locked
+    const uResInfo = await pool.query('SELECT banned, locked_until, session_active FROM users WHERE username = $1', [u]);
+    if (uResInfo.rows.length > 0) {
+      const isBanned = await pool.query('SELECT id FROM bans WHERE username = $1 AND service = $2', [u, 'devbox']);
+      if (isBanned.rows.length > 0) {
+        return res.status(403).json({ status: "error", message: "Your account has been permanently banned from the DevBox service for policy violations." });
+      }
+      const lockedUntil = parseInt(uResInfo.rows[0].locked_until || 0);
+      if (lockedUntil > Date.now()) {
+        const warnRes = await pool.query('SELECT reason, screenshot_proof FROM warns WHERE username = $1 ORDER BY created_at DESC LIMIT 1', [u]);
+        const latestWarn = warnRes.rows[0] || {};
+        return res.status(403).json({
+          status: "locked",
+          message: "Your account is temporarily locked for 24 hours for policy violations.",
+          locked_until: lockedUntil,
+          reason: latestWarn.reason || "Suspicious activity detected",
+          proof: latestWarn.screenshot_proof || "",
+          support_link: "http://absoracloud.fanclub.rocks"
+        });
+      }
     }
     
     if (usage.remaining_mins <= 0) {
