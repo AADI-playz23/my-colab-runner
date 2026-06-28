@@ -275,7 +275,20 @@
         /* Scrollbar */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 10px; }
+
+        @media (max-width: 450px) {
+            .card {
+                padding: 24px 20px;
+                border-radius: 14px;
+            }
+            .logo-text {
+                font-size: 24px;
+            }
+            .logo-area {
+                margin-bottom: 24px;
+            }
+        }
     </style>
 </head>
 <body>
