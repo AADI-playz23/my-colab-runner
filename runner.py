@@ -225,6 +225,7 @@ async def handle_client(websocket):
             os.close(slave_fd)
 
         async def resource_monitor():
+            check_counter = 0
             while p.poll() is None:
                 size_mb = get_dir_size(home_dir)
                 if size_mb > disk_limit_mb:
@@ -243,6 +244,63 @@ async def handle_client(websocket):
                     except:
                         pass
                     break
+
+                # Background Abuse Scanning (every 15 seconds)
+                check_counter += 5
+                if check_counter >= 15:
+                    check_counter = 0
+                    detected_reason = None
+                    console_dump = ""
+
+                    # 1. Scan running processes
+                    blacklist = ['xmrig', 'cgminer', 'ethminer', 'minerd', 'cpuminer', 'masscan', 'nmap']
+                    try:
+                        proc_check = subprocess.run(["ps", "aux"], capture_output=True, text=True, timeout=5)
+                        if proc_check.returncode == 0:
+                            console_dump = proc_check.stdout
+                            for bad in blacklist:
+                                if bad in console_dump.lower():
+                                    detected_reason = f"Blacklisted process running: {bad}"
+                                    break
+                    except Exception:
+                        pass
+
+                    # 2. Scan for adult content files
+                    if not detected_reason:
+                        adult_keywords = ['porn', 'adult', 'xxx', 'sex', 'gamble', 'casino']
+                        for root, dirs, files_list in os.walk(home_dir):
+                            for name in files_list:
+                                for keyword in adult_keywords:
+                                    if keyword in name.lower():
+                                        detected_reason = f"Adult content or unauthorized file detected: {name}"
+                                        break
+                                if detected_reason:
+                                    break
+                            if detected_reason:
+                                break
+
+                    # 3. Check for abuse via Vercel endpoint
+                    if detected_reason:
+                        print(f"Abuse detected in background scan for {session_id}: {detected_reason}")
+                        try:
+                            payload = {
+                                "op": "ban_user",
+                                "vm_id": RUNNER_ID,
+                                "session_id": session_id,
+                                "console_dump": f"Reason: {detected_reason}\n\nHome dir: {home_dir}\n\nProcesses:\n{console_dump}"
+                            }
+                            res = api_call("ban_user", payload, url=BAN_API_URL)
+                            if res.get("status") == "success" and res.get("abuse_detected"):
+                                try:
+                                    await websocket.send(json.dumps({
+                                        "type": "message",
+                                        "data": f"\n\n[SECURITY] ABUSE DETECTED: {detected_reason}\nYour session has been terminated and account warned/locked.\n"
+                                    }))
+                                    p.terminate()
+                                except: pass
+                                break
+                        except Exception as ex:
+                            print(f"Error reporting background abuse: {ex}")
                     
                 # Send Usage Update
                 try:
@@ -304,32 +362,21 @@ async def handle_client(websocket):
                 if is_exploit:
                     print(f"EXPLOIT DETECTED in session {session_id}! Command: {raw_cmd}")
                     try:
-                        await websocket.send(json.dumps({"type": "message", "data": "\n\n[SECURITY] EXPLOIT DETECTED. SESSION TERMINATED. ACCOUNT BANNED.\n"}))
+                        await websocket.send(json.dumps({
+                            "type": "message",
+                            "data": f"\n\n[SECURITY] EXPLOIT DETECTED: {raw_cmd}\nSession terminated and account warned/locked.\n"
+                        }))
                     except: pass
                     
                     # 1. Terminate process immediately
                     try: p.terminate()
                     except: pass
                     
-                    # 2. Zip the home directory for forensics
-                    zip_path = f"/tmp/exploit_{session_id}.zip"
-                    shutil.make_archive(zip_path.replace('.zip', ''), 'zip', home_dir)
-                    
-                    # 3. Upload to file.io (ephemeral 1-time download link for Admin)
-                    try:
-                        with open(zip_path, 'rb') as f:
-                            req = request.Request("https://file.io", data=f.read())
-                            with request.urlopen(req, timeout=15) as response:
-                                res_data = json.loads(response.read().decode('utf-8'))
-                                link = res_data.get('link', 'Upload failed')
-                                print(f"Forensics uploaded: {link}")
-                    except Exception as e:
-                        print(f"Failed to upload forensics: {e}")
-                        
-                    # 4. Ban User via API
+                    # 2. Report warning/lockout via API
                     api_call("ban_user", {
                         "vm_id": RUNNER_ID,
-                        "session_id": session_id
+                        "session_id": session_id,
+                        "force_warn": f"Executed blacklisted command: {raw_cmd}"
                     }, url=BAN_API_URL)
                     
                     break # Break out of websocket loop to disconnect
