@@ -843,6 +843,87 @@
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
         }
+
+        /* --- IDE RESPONSIVE MEDIA QUERIES --- */
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 16px;
+                gap: 8px;
+            }
+            .notebook-title {
+                font-size: 13px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 120px;
+            }
+            .header-right {
+                gap: 6px;
+            }
+            .exit-btn {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+            .status {
+                padding: 3px 8px;
+                font-size: 10px;
+            }
+            .session-timer {
+                font-size: 10px;
+                padding: 3px 6px;
+            }
+            .toolbar {
+                padding: 8px 12px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .toolbar-separator {
+                display: none;
+            }
+            .btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            #ideFmToggle {
+                display: inline-flex !important;
+            }
+            .file-manager {
+                position: fixed;
+                left: -250px;
+                top: 106px;
+                bottom: 0;
+                width: 240px;
+                z-index: 490;
+                background: rgba(6, 10, 22, 0.95);
+                backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
+                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+                transition: left 0.3s ease;
+            }
+            .file-manager.active {
+                left: 0;
+            }
+            .content {
+                padding: 16px 12px;
+            }
+            #cells-container {
+                gap: 12px;
+            }
+            .cell-header {
+                padding: 8px 12px;
+            }
+            .cell-input textarea {
+                padding: 12px;
+                font-size: 12.5px;
+            }
+            .md-view {
+                padding: 14px 18px;
+            }
+            .editor-modal {
+                width: 95%;
+                height: 90vh;
+            }
+        }
     </style>
 </head>
 <body>
@@ -866,6 +947,7 @@
 
     <!-- Toolbar -->
     <div class="toolbar glass">
+        <button class="btn" id="ideFmToggle" onclick="document.querySelector('.file-manager').classList.toggle('active')" style="display: none;">📁 Explorer</button>
         <button class="btn btn-connect" onclick="startSession()" id="btn-connect">⚡ Connect</button>
         <button class="btn btn-disconnect" onclick="disconnectSession()" id="btn-disconnect" style="display: none;">⏹ Disconnect</button>
         <div class="toolbar-separator"></div>
