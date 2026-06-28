@@ -92,25 +92,30 @@ def start_tunnel():
         stderr=subprocess.STDOUT,
         text=True
     )
-    for line in tunnel_proc.stdout:
-        print(f"[TUNNEL] {line.strip()}")
-        match = re.search(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com', line)
-        if match:
-            url = match.group(0)
-            worker_url = url.replace("https://", "wss://")
-            print(f"Tunnel established: {worker_url}")
-            
-            # Register VM with the Backend
-            reg_result = api_call("register_vm", {
-                "vm_id": RUNNER_ID,
-                "worker_url": worker_url
-            })
-            registered_vm_id = reg_result.get("vm_id", RUNNER_ID)
-            print(f"Registered as VM: {registered_vm_id}")
-            
-            # Start Heartbeat thread
-            threading.Thread(target=heartbeat_loop, daemon=True).start()
-            break
+    
+    def log_and_consume():
+        global worker_url, registered_vm_id
+        for line in tunnel_proc.stdout:
+            print(f"[TUNNEL] {line.strip()}")
+            if not worker_url:
+                match = re.search(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com', line)
+                if match:
+                    url = match.group(0)
+                    worker_url = url.replace("https://", "wss://")
+                    print(f"Tunnel established: {worker_url}")
+                    
+                    # Register VM with the Backend
+                    reg_result = api_call("register_vm", {
+                        "vm_id": RUNNER_ID,
+                        "worker_url": worker_url
+                    })
+                    registered_vm_id = reg_result.get("vm_id", RUNNER_ID)
+                    print(f"Registered as VM: {registered_vm_id}")
+                    
+                    # Start Heartbeat thread
+                    threading.Thread(target=heartbeat_loop, daemon=True).start()
+
+    threading.Thread(target=log_and_consume, daemon=True).start()
 
 def get_dir_size(path):
     total = 0
