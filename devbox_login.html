@@ -325,6 +325,17 @@
                 <input class="form-input" type="text" id="invite" placeholder="Enter invite code">
             </div>
 
+            <div id="tos-group" style="display:none; margin: 4px 0 14px 0;">
+                <label style="display:flex; align-items:flex-start; gap:10px; font-size:0.82rem; color:#94a3b8; cursor:pointer; line-height:1.5;">
+                    <input type="checkbox" id="tos-check" style="margin-top:3px; accent-color:#6366f1; width:15px; height:15px; flex-shrink:0;">
+                    <span>I agree to the
+                        <a href="https://absoracloud.free.je/tos.html" target="_blank" style="color:#6366f1; text-decoration:underline;">Terms of Service</a>,
+                        <a href="https://absoracloud.free.je/privacy.html" target="_blank" style="color:#6366f1; text-decoration:underline;">Privacy Policy</a>, and
+                        <a href="https://absoracloud.free.je/refund.html" target="_blank" style="color:#6366f1; text-decoration:underline;">Refund Policy</a>.
+                    </span>
+                </label>
+            </div>
+
             <button class="submit-btn" id="action-btn" onclick="submitAuth()">Enter DevBox</button>
 
             <div id="msg"></div>
@@ -348,6 +359,8 @@
                 : 'Join DevBox — your cloud IDE awaits.';
             document.getElementById('action-btn').innerText = mode === 'login' ? 'Enter DevBox' : 'Create Account';
             document.getElementById('invite-group').style.display = mode === 'login' ? 'none' : 'block';
+            document.getElementById('tos-group').style.display = mode === 'login' ? 'none' : 'block';
+            document.getElementById('tos-check').checked = false;
             document.getElementById('pass').setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
             const msg = document.getElementById('msg');
             msg.className = '';
@@ -372,6 +385,10 @@
             const btn = document.getElementById('action-btn');
 
             if (!u || !p) { showMsg('Username and password are required.', 'error'); return; }
+            if (mode === 'register' && !document.getElementById('tos-check').checked) {
+                showMsg('Please agree to the Terms of Service, Privacy Policy, and Refund Policy to register.', 'error');
+                return;
+            }
 
             btn.innerText = 'Authenticating...';
             btn.disabled = true;
