@@ -395,7 +395,7 @@
 
             try {
                 const payload = { username: u, password: p, op: mode };
-                if (mode === 'register') payload.invite = invite;
+                if (mode === 'register') { payload.invite = invite; payload.tos = true; }
 
                 const res = await fetch('/api/auth', {
                     method: 'POST',
