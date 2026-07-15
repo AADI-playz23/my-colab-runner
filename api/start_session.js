@@ -57,22 +57,34 @@ async function getUserUsage(username) {
 
 async function triggerVM() {
   // GitHub Actions Trigger — spins up a new runner VM
-  const token = process.env.GITHUB_TOKEN;
-  const repo = process.env.GITHUB_REPO;
-  if (token && repo) {
-    try {
-      await fetch(`https://api.github.com/repos/${repo}/dispatches`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `token ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Vercel-Backend'
-        },
-        body: JSON.stringify({ event_type: 'start-runner' })
-      });
-    } catch (e) {
-      console.error("Failed to trigger GitHub Action", e);
+  // NOTE: GITHUB_TOKEN is a reserved name in GitHub Actions — you must set it
+  // explicitly in Vercel project settings as a separate env var.
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  const repo  = process.env.GITHUB_REPO  || process.env.GH_REPO;
+
+  if (!token || !repo) {
+    console.error(`[DevBox triggerVM] MISSING ENV VARS — GITHUB_TOKEN=${!!token}, GITHUB_REPO=${!!repo}. Add these to Vercel project settings.`);
+    return;
+  }
+
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}/dispatches`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Vercel-Backend'
+      },
+      body: JSON.stringify({ event_type: 'start-runner' })
+    });
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      console.error(`[DevBox triggerVM] GitHub dispatch failed: HTTP ${res.status} — ${errBody}`);
+    } else {
+      console.log(`[DevBox triggerVM] Runner triggered successfully for repo: ${repo}`);
     }
+  } catch (e) {
+    console.error("[DevBox triggerVM] Failed to trigger GitHub Action:", e);
   }
 }
 
@@ -200,7 +212,7 @@ export default async function handler(req, res) {
       });
     } else {
       // No space available. Check VM count.
-      const max_vms = 2; // up to 2 CPU VMs = 40 users max before strict queue
+      const max_vms = 4; // up to 4 VMs = 80 users max before strict queue
       const countRes = await pool.query("SELECT COUNT(*) as vm_count FROM vms WHERE last_heartbeat > $1", [recent_time]);
       const vm_count = parseInt(countRes.rows[0].vm_count);
       
