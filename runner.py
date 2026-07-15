@@ -65,10 +65,15 @@ def heartbeat_loop():
         else:
             zero_users_start_time = time.time()
             
+        # Developer plan VM dedication: if a Developer session is running, report 20 (max slots)
+        # to VM table so backend marks this VM as fully occupied.
+        is_developer_active = any(s.get("plan") == "developer" for s in active_sessions.values())
+        reported_users = 20 if is_developer_active else num_users
+
         try:
             result = api_call("vm_heartbeat", {
                 "vm_id": registered_vm_id or RUNNER_ID,
-                "active_users": num_users
+                "active_users": reported_users
             })
             # If VM was not found in DB, re-register
             if result.get("status") == "error" and worker_url:
@@ -164,7 +169,8 @@ async def handle_client(websocket):
             
         active_sessions[session_id] = {
             "ws": websocket,
-            "last_activity": last_activity
+            "last_activity": last_activity,
+            "plan": plan
         }
         
         print(f"Auth successful for {session_id}")
@@ -227,6 +233,11 @@ async def handle_client(websocket):
             cmds_to_try = [["cmd.exe"]]
         else:
             cmds_to_try = [
+                # Try running inside a sandboxed Docker container first
+                ["docker", "run", "-it", "--rm", "--name", f"devbox_{session_id[:8]}",
+                 "--cpus", f"{requested_cpu}", "--memory", f"{ram_bytes}",
+                 "-v", f"{home_dir}:/root", "-w", "/root", "absoracloud-base", "/bin/bash"],
+                # Fallback to local process limits if Docker is unavailable (e.g. testing)
                 ["prlimit", f"--as={ram_bytes}", "nice", f"-n{nice_val}", "/bin/bash"],
                 ["nice", f"-n{nice_val}", "/bin/bash"],
                 ["/bin/bash"]
