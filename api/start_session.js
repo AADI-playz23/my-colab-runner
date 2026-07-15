@@ -186,10 +186,18 @@ export default async function handler(req, res) {
     // Find an available VM in the Fleet
     const recent_time = Math.floor(Date.now() / 1000) - 120; // 2 minutes
     
-    const vmRes = await pool.query(
-      "SELECT worker_url FROM vms WHERE active_users < 20 AND last_heartbeat > $1 ORDER BY active_users ASC LIMIT 1",
-      [recent_time]
-    );
+    let vmRes;
+    if (usage.plan === 'developer') {
+      vmRes = await pool.query(
+        "SELECT worker_url FROM vms WHERE active_users = 0 AND last_heartbeat > $1 LIMIT 1",
+        [recent_time]
+      );
+    } else {
+      vmRes = await pool.query(
+        "SELECT worker_url FROM vms WHERE active_users < 20 AND last_heartbeat > $1 ORDER BY active_users ASC LIMIT 1",
+        [recent_time]
+      );
+    }
 
     if (vmRes.rows.length > 0) {
       // Found active VM
