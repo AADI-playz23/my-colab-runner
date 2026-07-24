@@ -23,9 +23,6 @@ jobs:
           wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
           sudo dpkg -i cloudflared-linux-amd64.deb
 
-      - name: Build absoracloud-base Docker Image
-        run: docker build -t absoracloud-base .
-
       - name: Start Runner
         env:
           BASE_URL: "https://absoradevbox.vercel.app"
