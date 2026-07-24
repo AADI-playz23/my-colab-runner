@@ -193,15 +193,18 @@ async def handle_client(websocket):
         nice_val = 15
         ram_bytes = 4 * 1024 * 1024 * 1024
         disk_limit_mb = 500
+        requested_cpu = 1
         
         if plan == "pro":
             nice_val = 5
             ram_bytes = 8 * 1024 * 1024 * 1024
             disk_limit_mb = 1024
+            requested_cpu = 2
         elif plan == "developer":
             nice_val = 0
             ram_bytes = 16 * 1024 * 1024 * 1024
             disk_limit_mb = 3072
+            requested_cpu = 4
             
         if HAS_PTY:
             master_fd, slave_fd = pty.openpty()
@@ -281,7 +284,10 @@ async def handle_client(websocket):
                     # 1. Scan running processes
                     blacklist = ['xmrig', 'cgminer', 'ethminer', 'minerd', 'cpuminer', 'masscan', 'nmap']
                     try:
-                        proc_check = subprocess.run(["ps", "aux"], capture_output=True, text=True, timeout=5)
+                        if sys.platform == "win32":
+                            proc_check = subprocess.run(["tasklist"], capture_output=True, text=True, timeout=5)
+                        else:
+                            proc_check = subprocess.run(["ps", "aux"], capture_output=True, text=True, timeout=5)
                         if proc_check.returncode == 0:
                             console_dump = proc_check.stdout
                             for bad in blacklist:
@@ -306,27 +312,27 @@ async def handle_client(websocket):
                                 break
 
                     # 3. Check for abuse via Vercel endpoint
-                    if detected_reason:
-                        print(f"Abuse detected in background scan for {session_id}: {detected_reason}")
-                        try:
-                            payload = {
-                                "op": "ban_user",
-                                "vm_id": RUNNER_ID,
-                                "session_id": session_id,
-                                "console_dump": f"Reason: {detected_reason}\n\nHome dir: {home_dir}\n\nProcesses:\n{console_dump}"
-                            }
-                            res = api_call("ban_user", payload, url=BAN_API_URL)
-                            if res.get("status") == "success" and res.get("abuse_detected"):
-                                try:
-                                    await websocket.send(json.dumps({
-                                        "type": "message",
-                                        "data": f"\n\n[SECURITY] ABUSE DETECTED: {detected_reason}\nYour session has been terminated and account warned/locked.\n"
-                                    }))
-                                    p.terminate()
-                                except: pass
-                                break
-                        except Exception as ex:
-                            print(f"Error reporting background abuse: {ex}")
+                    try:
+                        payload = {
+                            "op": "ban_user",
+                            "vm_id": RUNNER_ID,
+                            "session_id": session_id,
+                            "console_dump": f"Reason: {detected_reason or 'Periodic check'}\n\nHome dir: {home_dir}\n\nProcesses:\n{console_dump}"
+                        }
+                        res = api_call("ban_user", payload, url=BAN_API_URL)
+                        if res.get("status") == "success" and res.get("abuse_detected"):
+                            reason_msg = res.get("reason", detected_reason or "Security check failed")
+                            print(f"[SECURITY] Abuse/Lockout triggered for session {session_id}: {reason_msg}")
+                            try:
+                                await websocket.send(json.dumps({
+                                    "type": "message",
+                                    "data": f"\n\n[SECURITY] SESSION SUSPENDED / ABUSE DETECTED: {reason_msg}\nYour session has been terminated.\n"
+                                }))
+                                p.terminate()
+                            except: pass
+                            break
+                    except Exception as ex:
+                        print(f"Error checking status: {ex}")
                     
                 # Send Usage Update
                 try:
