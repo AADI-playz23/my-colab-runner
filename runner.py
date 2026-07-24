@@ -235,16 +235,25 @@ async def handle_client(websocket):
         if sys.platform == "win32":
             cmds_to_try = [["cmd.exe"]]
         else:
-            cmds_to_try = [
-                # Try running inside a sandboxed Docker container first
-                ["docker", "run", "-it", "--rm", "--name", f"devbox_{session_id[:8]}",
-                 "--cpus", f"{requested_cpu}", "--memory", f"{ram_bytes}",
-                 "-v", f"{home_dir}:/root", "-w", "/root", "absoracloud-base", "/bin/bash"],
-                # Fallback to local process limits if Docker is unavailable (e.g. testing)
+            cmds_to_try = []
+            # Only attempt Docker if image 'absoracloud-base' exists locally
+            try:
+                insp = subprocess.run(["docker", "image", "inspect", "absoracloud-base"], capture_output=True, timeout=2)
+                if insp.returncode == 0:
+                    cmds_to_try.append([
+                        "docker", "run", "-it", "--rm", "--name", f"devbox_{session_id[:8]}",
+                        "--cpus", f"{requested_cpu}", "--memory", f"{ram_bytes}",
+                        "-v", f"{home_dir}:/root", "-w", "/root", "absoracloud-base", "/bin/bash"
+                    ])
+            except Exception:
+                pass
+
+            cmds_to_try.extend([
+                # Fallback to local process limits if Docker is unavailable
                 ["prlimit", f"--as={ram_bytes}", "nice", f"-n{nice_val}", "/bin/bash"],
                 ["nice", f"-n{nice_val}", "/bin/bash"],
                 ["/bin/bash"]
-            ]
+            ])
             
         p = start_process(cmds_to_try)
         if not p:
