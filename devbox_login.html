@@ -5,344 +5,189 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DevBox — Login</title>
     <meta name="description" content="Sign in to DevBox — Your cloud-based IDE powered by AbsoraCloud.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: { "surface": "#fdf8f8", "primary": "#1A1A1A", "secondary": "#5f5e5b", "outline": "#E5E1DA" },
+            fontFamily: { sans: ["Inter","sans-serif"], heading: ["Sora","sans-serif"] }
+          }
+        }
+      }
+    </script>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; background: #fdf8f8; display: grid; grid-template-columns: 1fr 1fr; }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #fdf8f8;
-            color: #1A1A1A;
-            position: relative;
-            overflow: hidden;
+        /* ── Left Panel ── */
+        .left-panel {
+            background: #1a1918;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 48px; position: relative; overflow: hidden;
         }
-
-        /* Animated background */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 80% 60% at 20% 20%, rgba(59, 130, 246, 0.14) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
-                linear-gradient(135deg, #060810 0%, #080c18 50%, #06090f 100%);
-            z-index: 0;
-            animation: bgPulse 10s ease-in-out infinite alternate;
-        }
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 40% 40% at 75% 25%, rgba(139, 92, 246, 0.09) 0%, transparent 50%),
-                radial-gradient(ellipse 50% 35% at 20% 70%, rgba(6, 182, 212, 0.07) 0%, transparent 50%);
-            z-index: 0;
-            animation: bgPulse 16s ease-in-out infinite alternate-reverse;
-        }
-        @keyframes bgPulse {
-            0% { opacity: 1; }
-            100% { opacity: 0.7; }
-        }
-
-        /* Floating orbs */
-        .orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
+        .left-panel::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse 70% 60% at 80% 20%, rgba(99,102,241,0.12) 0%, transparent 60%),
+                        radial-gradient(ellipse 60% 50% at 20% 80%, rgba(34,197,94,0.07) 0%, transparent 55%);
             pointer-events: none;
-            z-index: 0;
         }
-        .orb-1 { width: 400px; height: 400px; background: rgba(59,130,246,0.08); top: -100px; left: -100px; animation: orbFloat 20s ease-in-out infinite; }
-        .orb-2 { width: 300px; height: 300px; background: rgba(139,92,246,0.08); bottom: -50px; right: -50px; animation: orbFloat 25s ease-in-out infinite reverse; }
-        @keyframes orbFloat {
-            0%, 100% { transform: translate(0, 0); }
-            33% { transform: translate(30px, -20px); }
-            66% { transform: translate(-20px, 30px); }
+        .left-brand { position: relative; z-index: 1; }
+        .left-brand .logo { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 800; color: #fff; }
+        .left-brand .sub  { font-size: 0.72rem; color: rgba(255,255,255,0.35); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 3px; }
+        .left-hero { position: relative; z-index: 1; }
+        .left-hero .headline {
+            font-family: 'Sora', sans-serif; font-size: 2.8rem; font-weight: 800;
+            line-height: 1.12; color: #ffffff; letter-spacing: -0.03em; margin-bottom: 16px;
         }
+        .left-hero .sub { font-size: 0.95rem; color: rgba(255,255,255,0.5); line-height: 1.7; max-width: 340px; }
+        .feature-list { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; position: relative; z-index: 1; }
+        .feature-item { display: flex; align-items: center; gap: 10px; }
+        .feat-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; }
+        .feature-item span { font-size: 0.82rem; color: rgba(255,255,255,0.55); }
+        .left-footer { font-size: 0.72rem; color: rgba(255,255,255,0.2); position: relative; z-index: 1; }
 
-        .login-wrapper {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 400px;
-            padding: 24px;
+        /* Terminal decoration */
+        .term-box {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; padding: 18px 20px; margin-top: 32px; position: relative; z-index: 1;
         }
+        .term-bar { display: flex; gap: 5px; margin-bottom: 12px; }
+        .term-bar span { width: 10px; height: 10px; border-radius: 50%; }
+        .term-line { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.8; }
+        .term-green { color: #86efac; }
+        .term-muted { color: rgba(255,255,255,0.3); }
+        .term-white { color: rgba(255,255,255,0.7); }
+        .term-cursor { display: inline-block; width: 7px; height: 13px; background: rgba(255,255,255,0.6); vertical-align: middle; animation: blink 1s step-end infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-        /* Logo */
-        .logo-area {
-            text-align: center;
-            margin-bottom: 32px;
+        /* ── Right Panel ── */
+        .right-panel {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 48px 56px; background: #fdf8f8;
         }
-        .logo-icon {
-            font-size: 42px;
-            display: block;
-            margin-bottom: 8px;
-            filter: drop-shadow(0 0 20px rgba(59,130,246,0.5));
-            animation: logoGlow 3s ease-in-out infinite alternate;
-        }
-        @keyframes logoGlow {
-            from { filter: drop-shadow(0 0 12px rgba(59,130,246,0.4)); }
-            to   { filter: drop-shadow(0 0 28px rgba(139,92,246,0.6)); }
-        }
-        .logo-text {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            background: linear-gradient(135deg, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .logo-sub {
-            font-size: 12px;
-            color: #475569;
-            margin-top: 4px;
-            font-weight: 500;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
+        .form-wrapper { width: 100%; max-width: 380px; }
 
-        /* Card */
-        .card {
-            background: rgba(10, 15, 35, 0.7);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(148, 163, 184, 0.12);
-            border-radius: 18px;
-            padding: 36px 32px;
-            box-shadow: 0 0 0 1px rgba(59,130,246,0.05), 0 32px 64px rgba(0,0,0,0.5);
-        }
+        .form-logo { font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 800; color: #1A1A1A; margin-bottom: 6px; }
+        .form-sub  { font-size: 0.875rem; color: #888; margin-bottom: 36px; }
 
-        .card-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #e2e8f0;
-            margin-bottom: 4px;
-        }
-        .card-sub {
-            font-size: 13px;
-            color: #475569;
-            margin-bottom: 28px;
-            line-height: 1.5;
-        }
-
-        /* Mode tabs */
-        .mode-tabs {
-            display: flex;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            padding: 3px;
-            margin-bottom: 24px;
-            border: 1px solid rgba(148,163,184,0.08);
-        }
+        /* Tabs */
+        .mode-tabs { display: flex; gap: 0; border: 1px solid #E5E1DA; border-radius: 9px; overflow: hidden; margin-bottom: 28px; }
         .tab-btn {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 8px;
-            background: transparent;
-            color: #475569;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
+            flex: 1; padding: 9px; border: none; background: transparent;
+            font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: 0.2s;
+            font-family: 'Inter', sans-serif; color: #888;
         }
-        .tab-btn.active {
-            background: rgba(59, 130, 246, 0.2);
-            color: #60a5fa;
-            border: 1px solid rgba(59,130,246,0.3);
-            box-shadow: 0 0 12px rgba(59,130,246,0.15);
-        }
+        .tab-btn.active { background: #1A1A1A; color: #fff; }
 
-        /* Form */
-        .form-group { margin-bottom: 16px; }
-        .form-label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: #94a3b8;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        /* Form Fields */
+        .field { margin-bottom: 18px; }
+        .field label { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 6px; }
+        .field input {
+            width: 100%; padding: 10px 14px; border: 1.5px solid #E5E1DA; border-radius: 8px;
+            font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #1A1A1A;
+            background: #ffffff; outline: none; transition: 0.2s;
         }
-        .form-input {
-            width: 100%;
-            padding: 11px 14px;
-            background: rgba(0, 0, 0, 0.35);
-            border: 1px solid rgba(148,163,184,0.15);
-            border-radius: 8px;
-            color: #e2e8f0;
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            outline: none;
-            transition: all 0.2s;
-        }
-        .form-input::placeholder { color: #334155; }
-        .form-input:focus {
-            border-color: rgba(59,130,246,0.5);
-            background: rgba(0, 0, 0, 0.5);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-        }
+        .field input:focus { border-color: #1A1A1A; box-shadow: 0 0 0 3px rgba(26,26,26,0.06); }
 
-        /* Submit button */
+        /* TOS */
+        .tos-wrap { display: none; margin-bottom: 16px; }
+        .tos-wrap label { display: flex; align-items: flex-start; gap: 10px; font-size: 0.78rem; color: #888; cursor: pointer; line-height: 1.5; }
+        .tos-wrap a { color: #1A1A1A; text-decoration: underline; }
+
+        /* Submit */
         .submit-btn {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, rgba(59,130,246,0.8), rgba(139,92,246,0.8));
-            border: 1px solid rgba(96,165,250,0.4);
-            border-radius: 9px;
-            color: white;
-            font-size: 14px;
-            font-weight: 700;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            margin-top: 8px;
-            transition: all 0.2s;
-            letter-spacing: 0.02em;
-            position: relative;
-            overflow: hidden;
+            width: 100%; padding: 11px; background: #1A1A1A; color: #fff; border: none;
+            border-radius: 9px; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+            font-family: 'Inter', sans-serif; transition: 0.2s; margin-top: 4px;
         }
-        .submit-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .submit-btn:hover::before { opacity: 1; }
-        .submit-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(59,130,246,0.35), 0 0 0 1px rgba(96,165,250,0.3);
-        }
-        .submit-btn:active { transform: translateY(0); }
-        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .submit-btn:hover { background: #333; }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* Message */
-        #msg {
-            font-size: 13px;
-            margin-top: 14px;
-            padding: 10px 14px;
-            border-radius: 8px;
-            display: none;
-            line-height: 1.4;
-        }
-        #msg.error {
-            display: block;
-            background: rgba(239,68,68,0.1);
-            border: 1px solid rgba(239,68,68,0.3);
-            color: #f87171;
-        }
-        #msg.success {
-            display: block;
-            background: rgba(16,185,129,0.1);
-            border: 1px solid rgba(16,185,129,0.3);
-            color: #34d399;
-        }
+        #msg { font-size: 0.82rem; margin-top: 14px; padding: 10px 14px; border-radius: 8px; display: none; }
+        #msg.error   { display: block; background: rgba(220,38,38,0.06); border: 1px solid rgba(220,38,38,0.2); color: #dc2626; }
+        #msg.success { display: block; background: rgba(22,163,74,0.06); border: 1px solid rgba(22,163,74,0.2); color: #16a34a; }
 
-        /* Footer link */
-        .footer-note {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-            color: #334155;
-        }
-        .footer-note a { color: #3b82f6; text-decoration: none; }
-        .footer-note a:hover { text-decoration: underline; }
+        .back-link { margin-top: 20px; text-align: center; font-size: 0.78rem; color: #aaa; }
+        .back-link a { color: #1A1A1A; text-decoration: none; font-weight: 600; }
 
-        /* Divider */
-        .divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 20px 0;
-            color: #334155;
-            font-size: 12px;
-        }
-        .divider::before, .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: rgba(148,163,184,0.1);
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 10px; }
-
-        @media (max-width: 450px) {
-            .card {
-                padding: 24px 20px;
-                border-radius: 14px;
-            }
-            .logo-text {
-                font-size: 24px;
-            }
-            .logo-area {
-                margin-bottom: 24px;
-            }
+        @media (max-width: 768px) {
+            body { grid-template-columns: 1fr; }
+            .left-panel { display: none; }
+            .right-panel { padding: 40px 24px; }
         }
     </style>
 </head>
 <body>
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-
-    <div class="login-wrapper">
-        <div class="logo-area">
-            <span class="logo-icon">⚡</span>
-            <div class="logo-text">DevBox</div>
-            <div class="logo-sub">AbsoraCloud · Runtime IDE</div>
+    <!-- Left Panel -->
+    <div class="left-panel">
+        <div class="left-brand">
+            <div class="logo">DevBox</div>
+            <div class="sub">AbsoraCloud · Runtime IDE</div>
         </div>
 
-        <div class="card">
-            <!-- Mode Tabs -->
+        <div class="left-hero">
+            <div class="headline">Code anywhere.<br>Deploy in seconds.</div>
+            <div class="sub">A full Python runtime in your browser, connected to your AbsoraCloud storage.</div>
+
+            <div class="term-box">
+                <div class="term-bar">
+                    <span style="background:#ff5f57;"></span>
+                    <span style="background:#febc2e;"></span>
+                    <span style="background:#28c840;"></span>
+                </div>
+                <div class="term-line"><span class="term-green">$</span> <span class="term-white">import tensorflow as tf</span></div>
+                <div class="term-line"><span class="term-green">$</span> <span class="term-white">model.fit(X_train, y_train)</span></div>
+                <div class="term-line"><span class="term-muted">Epoch 1/10 — loss: 0.2341 — acc: 0.9127</span></div>
+                <div class="term-line"><span class="term-green">$</span> <span class="term-cursor"></span></div>
+            </div>
+        </div>
+
+        <div class="left-footer">© 2026 AbsoraCloud · All rights reserved</div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+        <div class="form-wrapper">
+            <div class="form-logo">Welcome back</div>
+            <div class="form-sub">Sign in to your DevBox workspace</div>
+
             <div class="mode-tabs">
                 <button class="tab-btn active" id="tab-login" onclick="setMode('login')">Sign In</button>
                 <button class="tab-btn" id="tab-register" onclick="setMode('register')">Register</button>
             </div>
 
-            <div class="card-title" id="card-title">Welcome back</div>
-            <div class="card-sub" id="card-sub">Enter your credentials to access your workspace.</div>
-
-            <div class="form-group">
-                <label class="form-label" for="user">Username</label>
-                <input class="form-input" type="text" id="user" placeholder="your_username" autocomplete="username">
+            <div class="field">
+                <label for="user">Username</label>
+                <input type="text" id="user" placeholder="your_username" autocomplete="username">
             </div>
-            <div class="form-group">
-                <label class="form-label" for="pass">Password</label>
-                <input class="form-input" type="password" id="pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') submitAuth()">
+            <div class="field">
+                <label for="pass">Password</label>
+                <input type="password" id="pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') submitAuth()">
             </div>
-            <div class="form-group" id="invite-group" style="display:none;">
-                <label class="form-label" for="invite">Invite / Promo Code <span style="color:#334155;">(Optional)</span></label>
-                <input class="form-input" type="text" id="invite" placeholder="Enter invite code">
+            <div class="field" id="invite-group" style="display:none;">
+                <label for="invite">Invite / Promo Code <span style="color:#ccc;font-weight:400;">(Optional)</span></label>
+                <input type="text" id="invite" placeholder="Enter invite code">
             </div>
 
-            <div id="tos-group" style="display:none; margin: 4px 0 14px 0;">
-                <label style="display:flex; align-items:flex-start; gap:10px; font-size:0.82rem; color:#94a3b8; cursor:pointer; line-height:1.5;">
-                    <input type="checkbox" id="tos-check" onchange="if(this.checked){var m=document.getElementById('msg');m.innerText='';m.className='';m.style.display='none';}" style="margin-top:3px; accent-color:#6366f1; width:15px; height:15px; flex-shrink:0;">
+            <div class="tos-wrap" id="tos-group">
+                <label>
+                    <input type="checkbox" id="tos-check" onchange="if(this.checked){var m=document.getElementById('msg');m.className='';m.style.display='none';}">
                     <span>I agree to the
-                        <a href="https://absoracloud.free.je/tos.html" target="_blank" style="color:#6366f1; text-decoration:underline;">Terms of Service</a>,
-                        <a href="https://absoracloud.free.je/privacy.html" target="_blank" style="color:#6366f1; text-decoration:underline;">Privacy Policy</a>, and
-                        <a href="https://absoracloud.free.je/refund.html" target="_blank" style="color:#6366f1; text-decoration:underline;">Refund Policy</a>.
+                        <a href="https://absoracloud.free.je/tos.html" target="_blank">Terms of Service</a>,
+                        <a href="https://absoracloud.free.je/privacy.html" target="_blank">Privacy Policy</a>, and
+                        <a href="https://absoracloud.free.je/refund.html" target="_blank">Refund Policy</a>.
                     </span>
                 </label>
             </div>
 
             <button class="submit-btn" id="action-btn" onclick="submitAuth()">Enter DevBox</button>
-
             <div id="msg"></div>
 
-            <div class="footer-note" style="margin-top:16px;">
-                <a href="index.html">← Back to Home</a>
-            </div>
+            <div class="back-link"><a href="index.html">← Back to Home</a></div>
         </div>
     </div>
 
@@ -353,29 +198,20 @@
             mode = newMode;
             document.getElementById('tab-login').classList.toggle('active', mode === 'login');
             document.getElementById('tab-register').classList.toggle('active', mode === 'register');
-            document.getElementById('card-title').innerText = mode === 'login' ? 'Welcome back' : 'Create account';
-            document.getElementById('card-sub').innerText = mode === 'login'
-                ? 'Enter your credentials to access your workspace.'
-                : 'Join DevBox — your cloud IDE awaits.';
+            document.querySelector('.form-logo').innerText = mode === 'login' ? 'Welcome back' : 'Create account';
+            document.querySelector('.form-sub').innerText  = mode === 'login' ? 'Sign in to your DevBox workspace' : 'Join DevBox — your cloud IDE awaits.';
             document.getElementById('action-btn').innerText = mode === 'login' ? 'Enter DevBox' : 'Create Account';
             document.getElementById('invite-group').style.display = mode === 'login' ? 'none' : 'block';
-            document.getElementById('tos-group').style.display = mode === 'login' ? 'none' : 'block';
+            document.getElementById('tos-group').style.display    = mode === 'login' ? 'none' : 'block';
             document.getElementById('tos-check').checked = false;
             document.getElementById('pass').setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
             const msg = document.getElementById('msg');
-            msg.className = '';
-            msg.innerText = '';
-            msg.style.display = 'none';
+            msg.className = ''; msg.innerText = ''; msg.style.display = 'none';
         }
-
-        // Legacy toggleMode support
-        function toggleMode() { setMode(mode === 'login' ? 'register' : 'login'); }
 
         function showMsg(text, type) {
             const msg = document.getElementById('msg');
-            msg.innerText = text;
-            msg.className = type;
-            msg.style.display = 'block';
+            msg.innerText = text; msg.className = type; msg.style.display = 'block';
         }
 
         async function submitAuth() {
@@ -383,46 +219,26 @@
             const p = document.getElementById('pass').value;
             const invite = document.getElementById('invite').value;
             const btn = document.getElementById('action-btn');
-
             if (!u || !p) { showMsg('Username and password are required.', 'error'); return; }
             if (mode === 'register' && !document.getElementById('tos-check').checked) {
-                showMsg('Please agree to the Terms of Service, Privacy Policy, and Refund Policy to register.', 'error');
-                return;
+                showMsg('Please agree to the Terms of Service, Privacy Policy, and Refund Policy to register.', 'error'); return;
             }
-
-            btn.innerText = 'Authenticating...';
-            btn.disabled = true;
-
+            btn.innerText = 'Authenticating...'; btn.disabled = true;
             try {
                 const payload = { username: u, password: p, op: mode };
                 if (mode === 'register') { payload.invite = invite; payload.tos = true; }
-
-                const res = await fetch('/api/auth', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                const res = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const data = await res.json();
-
                 if (data.status === 'success') {
-                    if (mode === 'register') {
-                        showMsg('✓ Registration successful! You can now sign in.', 'success');
-                        setTimeout(() => setMode('login'), 2000);
-                    } else {
-                        localStorage.setItem('username', u);
-                        localStorage.setItem('devbox_session', u);
+                    if (mode === 'register') { showMsg('✓ Registration successful! You can now sign in.', 'success'); setTimeout(() => setMode('login'), 2000); }
+                    else {
+                        localStorage.setItem('username', u); localStorage.setItem('devbox_session', u);
                         showMsg('✓ Signed in! Redirecting...', 'success');
                         setTimeout(() => window.location.href = 'dashboard.html', 600);
                     }
-                } else {
-                    showMsg(data.message || 'Authentication failed.', 'error');
-                }
-            } catch (e) {
-                showMsg('Connection error. Please try again.', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = mode === 'login' ? 'Enter DevBox' : 'Create Account';
-            }
+                } else { showMsg(data.message || 'Authentication failed.', 'error'); }
+            } catch (e) { showMsg('Connection error. Please try again.', 'error'); }
+            finally { btn.disabled = false; btn.innerText = mode === 'login' ? 'Enter DevBox' : 'Create Account'; }
         }
     </script>
 </body>

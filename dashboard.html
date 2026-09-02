@@ -5,446 +5,212 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DevBox — My Notebooks</title>
     <meta name="description" content="Manage your DevBox notebooks and connect to cloud runtimes.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --accent-blue: #1A1A1A;
-            --accent-purple: #1c1b1a;
-            --accent-green: #16a34a;
-            --accent-red: #dc2626;
-            --text-primary: #1A1A1A;
-            --text-secondary: #444748;
-            --text-muted: #8C8984;
-            --glass-bg: #ffffff;
-            --glass-border: #E5E1DA;
-            --glass-border-bright: #E5E1DA;
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 14px;
-            --radius-xl: 16px;
-            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
+        * { box-sizing: border-box; }
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #fdf8f8;
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
+            margin: 0; font-family: 'Inter', sans-serif;
+            background: #fdf8f8; color: #1A1A1A; min-height: 100vh;
         }
 
-        /* Animated background */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 70% 50% at 15% 10%, rgba(59,130,246,0.12) 0%, transparent 60%),
-                radial-gradient(ellipse 55% 45% at 85% 85%, rgba(139,92,246,0.10) 0%, transparent 60%),
-                linear-gradient(160deg, #060810 0%, #080c18 60%, #050710 100%);
-            z-index: 0;
-            pointer-events: none;
-            animation: bgPulse 12s ease-in-out infinite alternate;
+        /* ── Top Nav ── */
+        nav {
+            background: #ffffff; border-bottom: 2px solid #1A1A1A;
+            padding: 0 40px; display: flex; align-items: stretch;
+            height: 56px; position: sticky; top: 0; z-index: 100;
         }
-        @keyframes bgPulse { 0% { opacity: 1; } 100% { opacity: 0.75; } }
-
-        /* Grid */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(148,163,184,0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(148,163,184,0.025) 1px, transparent 1px);
-            background-size: 60px 60px;
-            z-index: 0;
-            pointer-events: none;
+        .nav-logo {
+            display: flex; align-items: center;
+            font-family: 'Sora', sans-serif; font-size: 1.15rem; font-weight: 800;
+            color: #1A1A1A; border-right: 2px solid #1A1A1A; padding-right: 24px; margin-right: 24px;
         }
-
-        /* Orbs */
-        .orb { position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0; }
-        .orb-1 { width: 450px; height: 450px; background: rgba(59,130,246,0.07); top: -120px; left: -120px; animation: orbDrift 22s ease-in-out infinite; }
-        .orb-2 { width: 350px; height: 350px; background: rgba(139,92,246,0.06); bottom: -80px; right: -80px; animation: orbDrift 28s ease-in-out infinite reverse; }
-        @keyframes orbDrift {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(30px, -25px); }
+        .nav-links { display: flex; align-items: stretch; }
+        .nav-link {
+            display: flex; align-items: center; padding: 0 16px;
+            font-size: 0.82rem; font-weight: 600; color: #888;
+            border-right: 1px solid #E5E1DA; text-decoration: none; transition: 0.15s;
         }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.35); }
-
-        /* Layout */
-        .page-wrapper {
-            position: relative;
-            z-index: 1;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ── Header ── */
-        .header {
-            padding: 14px 28px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(6, 8, 16, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            position: sticky;
-            top: 0;
-            z-index: 50;
-        }
-        .header-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
-        .logo-icon { font-size: 20px; filter: drop-shadow(0 0 8px rgba(59,130,246,0.6)); }
-        .logo-text {
-            font-size: 18px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            background: linear-gradient(135deg, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .header-right { display: flex; align-items: center; gap: 12px; }
-        .user-chip {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(59,130,246,0.08);
-            border: 1px solid rgba(59,130,246,0.2);
+        .nav-link:hover { color: #1A1A1A; background: #f7f3f2; }
+        .nav-link.active { color: #1A1A1A; border-bottom: 2px solid #1A1A1A; margin-bottom: -2px; }
+        .nav-spacer { flex: 1; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .user-badge {
+            display: flex; align-items: center; gap: 8px;
+            background: #f1edec; border: 1px solid #E5E1DA; border-radius: 6px;
             padding: 5px 12px 5px 8px;
-            border-radius: 20px;
-            font-size: 12px;
-            color: #60a5fa;
-            font-weight: 500;
         }
-        .user-avatar {
-            width: 22px; height: 22px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 10px;
-            font-weight: 700;
-            color: white;
+        .user-initial {
+            width: 24px; height: 24px; border-radius: 4px; background: #1A1A1A;
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            font-size: 0.72rem; font-weight: 800;
         }
+        .user-name { font-size: 0.82rem; font-weight: 700; }
+        .btn-signout {
+            background: transparent; border: 1px solid #E5E1DA; padding: 6px 14px;
+            border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: #888;
+            cursor: pointer; font-family: inherit; transition: 0.15s;
+        }
+        .btn-signout:hover { border-color: #1A1A1A; color: #1A1A1A; }
 
-        /* ── Buttons ── */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 16px;
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: var(--transition);
-            border: 1px solid transparent;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, rgba(59,130,246,0.8), rgba(139,92,246,0.8));
-            border-color: rgba(96,165,250,0.4);
-            color: white;
-        }
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(59,130,246,0.35);
-        }
-        .btn-ghost {
-            background: rgba(255,255,255,0.04);
-            border-color: var(--glass-border-bright);
-            color: var(--text-secondary);
-        }
-        .btn-ghost:hover {
-            background: rgba(255,255,255,0.07);
-            color: var(--text-primary);
-            border-color: rgba(148,163,184,0.28);
-        }
-        .btn-danger {
-            background: rgba(239,68,68,0.12);
-            border-color: rgba(239,68,68,0.3);
-            color: #f87171;
-        }
-        .btn-danger:hover {
-            background: rgba(239,68,68,0.2);
-            border-color: rgba(248,113,113,0.5);
-            box-shadow: 0 4px 14px rgba(239,68,68,0.25);
-        }
+        /* ── Main ── */
+        .main { max-width: 860px; margin: 0 auto; padding: 48px 32px; }
 
-        /* ── Main Content ── */
-        .main { flex: 1; padding: 40px 28px; max-width: 900px; margin: 0 auto; width: 100%; }
-
-        /* ── Page Title ── */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 32px;
-            gap: 16px;
+        /* Page Header */
+        .page-hdr { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 32px; }
+        .page-title { font-family: 'Sora', sans-serif; font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; }
+        .page-count { font-size: 0.82rem; color: #888; margin-top: 4px; font-weight: 500; }
+        .btn-new {
+            display: flex; align-items: center; gap: 6px;
+            background: #1A1A1A; color: #fff; border: none; padding: 10px 20px;
+            border-radius: 8px; font-size: 0.875rem; font-weight: 700; cursor: pointer;
+            font-family: 'Inter', sans-serif; transition: 0.2s; white-space: nowrap;
         }
-        .page-title-area {}
-        .page-title {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-        }
-        .page-subtitle { font-size: 13px; color: var(--text-muted); }
+        .btn-new:hover { background: #333; }
+        .btn-new .material-symbols-outlined { font-size: 1rem; }
 
-        /* ── Search/Filter ── */
-        .search-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 24px;
+        /* Search */
+        .search-wrap { position: relative; margin-bottom: 24px; }
+        .search-wrap .material-symbols-outlined {
+            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            font-size: 1rem; color: #aaa; pointer-events: none;
         }
         .search-input {
-            flex: 1;
-            padding: 9px 14px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border-bright);
-            border-radius: var(--radius-sm);
-            color: var(--text-primary);
-            font-size: 13px;
-            font-family: 'Inter', sans-serif;
-            outline: none;
-            transition: var(--transition);
+            width: 100%; padding: 10px 14px 10px 38px; border: 1.5px solid #E5E1DA;
+            border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.875rem;
+            outline: none; transition: 0.2s; background: #fff; color: #1A1A1A;
         }
-        .search-input::placeholder { color: #334155; }
-        .search-input:focus {
-            border-color: rgba(59,130,246,0.4);
-            background: rgba(0,0,0,0.4);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.08);
-        }
+        .search-input:focus { border-color: #1A1A1A; }
 
-        /* ── Notebook List ── */
-        #list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-
-        .notebook-item {
-            background: rgba(10, 15, 35, 0.55);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            padding: 20px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            transition: var(--transition);
-            animation: fadeInUp 0.3s ease both;
+        /* Notebook List */
+        .nb-list { display: flex; flex-direction: column; gap: 2px; }
+        .nb-item {
+            display: flex; align-items: center; gap: 16px; padding: 14px 18px;
+            background: #ffffff; border: 1.5px solid #E5E1DA; border-radius: 10px;
+            transition: 0.18s; cursor: pointer;
         }
-        .notebook-item:hover {
-            border-color: rgba(59,130,246,0.25);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(59,130,246,0.07);
+        .nb-item:hover { border-color: #1A1A1A; box-shadow: 3px 3px 0 #1A1A1A; transform: translate(-1px,-1px); }
+        .nb-icon-wrap {
+            width: 38px; height: 38px; border-radius: 8px; background: #f1edec;
+            border: 1.5px solid #E5E1DA; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 1.1rem;
         }
         .nb-info { flex: 1; min-width: 0; }
-        .nb-title-link {
-            font-size: 16px;
-            font-weight: 700;
-            color: #60a5fa;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 6px;
-            letter-spacing: -0.01em;
-            transition: color 0.2s;
+        .nb-name { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .nb-meta { display: flex; gap: 14px; margin-top: 3px; }
+        .nb-meta-item { font-size: 0.72rem; color: #aaa; display: flex; align-items: center; gap: 4px; }
+        .nb-meta-item .material-symbols-outlined { font-size: 0.85rem; }
+        .nb-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .btn-open {
+            display: flex; align-items: center; gap: 4px;
+            background: #1A1A1A; color: #fff; border: none; padding: 7px 14px;
+            border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+            font-family: 'Inter', sans-serif; text-decoration: none; transition: 0.15s; white-space: nowrap;
         }
-        .nb-title-link:hover { color: #93c5fd; }
-        .nb-title-link .nb-icon { font-size: 18px; }
-        .nb-meta {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-size: 12px;
-            color: var(--text-muted);
+        .btn-open:hover { background: #333; }
+        .btn-delete {
+            width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+            background: transparent; border: 1.5px solid #E5E1DA; border-radius: 6px;
+            cursor: pointer; color: #dc2626; transition: 0.15s;
         }
-        .nb-meta-item { display: flex; align-items: center; gap: 5px; }
-        .nb-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .btn-delete:hover { background: rgba(220,38,38,0.06); border-color: #dc2626; }
+        .btn-delete .material-symbols-outlined { font-size: 0.95rem; }
 
-        /* ── Empty State ── */
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: var(--text-muted);
-        }
-        .empty-icon { font-size: 56px; display: block; margin-bottom: 20px; opacity: 0.4; }
-        .empty-title { font-size: 18px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
-        .empty-desc { font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+        /* Empty State */
+        .empty-state { text-align: center; padding: 80px 20px; }
+        .empty-state .e-icon { font-size: 3rem; margin-bottom: 16px; }
+        .empty-state h3 { font-family: 'Sora', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+        .empty-state p { font-size: 0.875rem; color: #888; margin-bottom: 20px; }
 
-        /* ── Modal ── */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 200;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-overlay.open { display: flex; }
+        /* Modal */
+        .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 200; align-items: center; justify-content: center; }
+        .modal-bg.open { display: flex; }
         .modal {
-            background: rgba(8, 12, 28, 0.95);
-            border: 1px solid rgba(59,130,246,0.2);
-            border-radius: var(--radius-xl);
-            padding: 32px;
-            width: 100%;
-            max-width: 420px;
-            box-shadow: 0 0 60px rgba(59,130,246,0.12), 0 40px 80px rgba(0,0,0,0.6);
-            animation: fadeInUp 0.25s ease;
+            background: #ffffff; border: 2px solid #1A1A1A; border-radius: 14px;
+            padding: 32px; width: 100%; max-width: 420px;
+            box-shadow: 8px 8px 0 #1A1A1A;
         }
-        .modal-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 6px;
+        .modal h3 { font-family: 'Sora', sans-serif; font-size: 1.2rem; font-weight: 800; margin-bottom: 6px; }
+        .modal p { font-size: 0.82rem; color: #888; margin-bottom: 20px; }
+        .modal input {
+            width: 100%; padding: 10px 14px; border: 1.5px solid #E5E1DA;
+            border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.875rem;
+            outline: none; margin-bottom: 16px; transition: 0.2s;
         }
-        .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
-        .modal-input {
-            width: 100%;
-            padding: 11px 14px;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--glass-border-bright);
-            border-radius: var(--radius-sm);
-            color: var(--text-primary);
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            outline: none;
-            transition: var(--transition);
-            margin-bottom: 16px;
+        .modal input:focus { border-color: #1A1A1A; }
+        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; }
+        .btn-cancel {
+            padding: 9px 18px; background: #f1edec; border: 1.5px solid #E5E1DA;
+            border-radius: 7px; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit;
         }
-        .modal-input:focus { border-color: rgba(59,130,246,0.5); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .btn-cancel:hover { border-color: #1A1A1A; }
+        .btn-create {
+            padding: 9px 18px; background: #1A1A1A; color: #fff;
+            border: none; border-radius: 7px; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: inherit;
+        }
+        .btn-create:hover { background: #333; }
 
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(12px); }
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(8px); }
             to   { opacity: 1; transform: translateY(0); }
         }
+        .nb-item { animation: fadeSlide 0.25s ease both; }
 
-        /* --- RESPONSIVE MEDIA QUERIES --- */
-        @media (max-width: 680px) {
-            .header {
-                padding: 10px 16px;
-            }
-            .header-logo .logo-text {
-                font-size: 16px;
-            }
-            .main {
-                padding: 24px 16px;
-            }
-            .page-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
-                margin-bottom: 24px;
-            }
-            .page-header button {
-                width: 100%;
-                justify-content: center;
-                padding: 10px;
-            }
-            .page-title {
-                font-size: 22px;
-            }
-            .notebook-item {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 16px;
-                padding: 16px;
-                border-radius: 12px;
-            }
-            .nb-meta {
-                flex-wrap: wrap;
-                gap: 8px 12px;
-            }
-            .nb-actions {
-                display: flex;
-                gap: 8px;
-            }
-            .nb-actions a {
-                flex: 1;
-                justify-content: center;
-            }
-            .nb-actions button {
-                padding: 8px 16px;
-            }
-            .modal {
-                padding: 24px 20px;
-                border-radius: 16px;
-            }
+        @media (max-width: 640px) {
+            nav { padding: 0 16px; }
+            .main { padding: 28px 16px; }
+            .nb-item { flex-wrap: wrap; }
+            .nb-actions { width: 100%; }
+            .btn-open { flex: 1; justify-content: center; }
         }
     </style>
 </head>
 <body>
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-
-    <div class="page-wrapper">
-        <!-- Header -->
-        <header class="header">
-            <a href="index.html" class="header-logo">
-                <span class="logo-icon">⚡</span>
-                <span class="logo-text">DevBox</span>
-            </a>
-            <div class="header-right">
-                <a href="plans.html" class="btn btn-ghost" style="border-color: rgba(139,92,246,0.25); color: #a78bfa; margin-right: 4px;">💎 Plans</a>
-                <div class="user-chip">
-                    <div class="user-avatar" id="user-avatar">?</div>
-                    <span id="auth-status">Loading...</span>
-                </div>
-                <button class="btn btn-ghost" onclick="logout()">Sign out</button>
+    <nav>
+        <div class="nav-logo">DevBox</div>
+        <div class="nav-links">
+            <a class="nav-link active" href="dashboard.html">Notebooks</a>
+            <a class="nav-link" href="plans.html">Plans</a>
+        </div>
+        <div class="nav-spacer"></div>
+        <div class="nav-right">
+            <div class="user-badge">
+                <div class="user-initial" id="user-initial">?</div>
+                <div class="user-name" id="auth-status">Loading...</div>
             </div>
-        </header>
+            <button class="btn-signout" onclick="logout()">Sign out</button>
+        </div>
+    </nav>
 
-        <!-- Main -->
-        <main class="main">
-            <div class="page-header">
-                <div class="page-title-area">
-                    <h1 class="page-title">My Notebooks</h1>
-                    <p class="page-subtitle" id="nb-count">Loading...</p>
-                </div>
-                <button class="btn btn-primary" onclick="openCreateModal()">
-                    ＋ New Notebook
-                </button>
+    <div class="main">
+        <div class="page-hdr">
+            <div>
+                <div class="page-title">My Notebooks</div>
+                <div class="page-count" id="nb-count">Loading...</div>
             </div>
+            <button class="btn-new" onclick="openCreateModal()">
+                <span class="material-symbols-outlined">add</span> New Notebook
+            </button>
+        </div>
 
-            <div class="search-bar">
-                <input class="search-input" type="text" id="search-input" placeholder="🔍  Search notebooks..." oninput="filterNotebooks()">
-            </div>
+        <div class="search-wrap">
+            <span class="material-symbols-outlined">search</span>
+            <input type="text" class="search-input" id="search-input" placeholder="Search notebooks..." oninput="filterNotebooks()">
+        </div>
 
-            <ul id="list"></ul>
-        </main>
+        <div class="nb-list" id="list"></div>
     </div>
 
     <!-- Create Modal -->
-    <div class="modal-overlay" id="create-modal" onclick="handleModalClick(event)">
+    <div class="modal-bg" id="create-modal" onclick="handleModalClick(event)">
         <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-title">✨ New Notebook</div>
-            <div class="modal-sub">Give your notebook a descriptive name.</div>
-            <input class="modal-input" type="text" id="nb-name-input" placeholder="e.g. Data Analysis 2026" onkeydown="if(event.key==='Enter') confirmCreate()">
-            <div class="modal-actions">
-                <button class="btn btn-ghost" onclick="closeCreateModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="confirmCreate()">Create →</button>
+            <h3>New Notebook</h3>
+            <p>Give your notebook a descriptive name.</p>
+            <input type="text" id="nb-name-input" placeholder="e.g. Data Analysis 2026" onkeydown="if(event.key==='Enter') confirmCreate()">
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+                <button class="btn-create" onclick="confirmCreate()">Create →</button>
             </div>
         </div>
     </div>
@@ -455,104 +221,80 @@
 
         let allNotebooks = [];
 
-        // Setup user chip
         document.getElementById('auth-status').innerText = username;
-        document.getElementById('user-avatar').innerText = username.charAt(0).toUpperCase();
+        document.getElementById('user-initial').innerText = username.charAt(0).toUpperCase();
 
-        function logout() {
-            localStorage.removeItem('username');
-            localStorage.removeItem('devbox_session');
-            window.location.href = 'devbox_login.html';
-        }
+        function logout() { localStorage.removeItem('username'); localStorage.removeItem('devbox_session'); window.location.href = 'devbox_login.html'; }
 
         function loadNotebooks() {
             allNotebooks = JSON.parse(localStorage.getItem('notebooks') || '[]');
-            // Sort newest first
             allNotebooks.sort((a, b) => b.updatedAt - a.updatedAt);
             renderNotebooks(allNotebooks);
         }
 
         function filterNotebooks() {
             const q = document.getElementById('search-input').value.toLowerCase();
-            const filtered = q ? allNotebooks.filter(nb => nb.name.toLowerCase().includes(q)) : allNotebooks;
-            renderNotebooks(filtered);
+            renderNotebooks(q ? allNotebooks.filter(nb => nb.name.toLowerCase().includes(q)) : allNotebooks);
         }
 
         function renderNotebooks(notebooks) {
             const list = document.getElementById('list');
-            const countEl = document.getElementById('nb-count');
-
             list.innerHTML = '';
-            countEl.innerText = `${notebooks.length} notebook${notebooks.length !== 1 ? 's' : ''}`;
+            document.getElementById('nb-count').innerText = `${notebooks.length} notebook${notebooks.length !== 1 ? 's' : ''}`;
 
             if (notebooks.length === 0) {
                 list.innerHTML = `
                     <div class="empty-state">
-                        <span class="empty-icon">📓</span>
-                        <div class="empty-title">No notebooks yet</div>
-                        <div class="empty-desc">Create your first notebook to start running code in the cloud.</div>
-                        <button class="btn btn-primary" onclick="openCreateModal()">＋ Create your first notebook</button>
+                        <div class="e-icon">📓</div>
+                        <h3>No notebooks yet</h3>
+                        <p>Create your first notebook to start running code in the cloud.</p>
+                        <button class="btn-new" onclick="openCreateModal()"><span class="material-symbols-outlined">add</span> Create your first notebook</button>
                     </div>`;
                 return;
             }
 
             notebooks.forEach((nb, i) => {
-                const li = document.createElement('li');
-                li.className = 'notebook-item';
-                li.style.animationDelay = `${i * 0.05}s`;
-
+                const item = document.createElement('div');
+                item.className = 'nb-item';
+                item.style.animationDelay = `${i * 0.04}s`;
                 const date = new Date(nb.updatedAt);
-                const timeAgo = getTimeAgo(date);
                 const cellCount = (nb.cells || []).length;
-
-                li.innerHTML = `
+                item.innerHTML = `
+                    <div class="nb-icon-wrap">📓</div>
                     <div class="nb-info">
-                        <a href="ide.html?id=${nb.id}" class="nb-title-link">
-                            <span class="nb-icon">📓</span>
-                            ${escapeHtml(nb.name)}
-                        </a>
+                        <div class="nb-name">${escapeHtml(nb.name)}</div>
                         <div class="nb-meta">
-                            <span class="nb-meta-item">🕐 ${timeAgo}</span>
-                            <span class="nb-meta-item">📋 ${cellCount} cell${cellCount !== 1 ? 's' : ''}</span>
+                            <span class="nb-meta-item"><span class="material-symbols-outlined">schedule</span> ${getTimeAgo(date)}</span>
+                            <span class="nb-meta-item"><span class="material-symbols-outlined">table_rows</span> ${cellCount} cell${cellCount !== 1 ? 's' : ''}</span>
                         </div>
                     </div>
                     <div class="nb-actions">
-                        <a href="ide.html?id=${nb.id}" class="btn btn-ghost">Open →</a>
-                        <button class="btn btn-danger" onclick="deleteNotebook('${nb.id}')">🗑</button>
-                    </div>
-                `;
-                list.appendChild(li);
+                        <a href="ide.html?id=${nb.id}" class="btn-open">Open <span class="material-symbols-outlined" style="font-size:0.9rem;">arrow_forward</span></a>
+                        <button class="btn-delete" onclick="deleteNotebook('${nb.id}')"><span class="material-symbols-outlined">delete</span></button>
+                    </div>`;
+                list.appendChild(item);
             });
         }
 
-        // Modal
         function openCreateModal() {
             document.getElementById('create-modal').classList.add('open');
-            setTimeout(() => document.getElementById('nb-name-input').focus(), 100);
+            setTimeout(() => document.getElementById('nb-name-input').focus(), 80);
         }
         function closeCreateModal() {
             document.getElementById('create-modal').classList.remove('open');
             document.getElementById('nb-name-input').value = '';
         }
-        function handleModalClick(e) {
-            if (e.target === document.getElementById('create-modal')) closeCreateModal();
-        }
+        function handleModalClick(e) { if (e.target === document.getElementById('create-modal')) closeCreateModal(); }
 
         function confirmCreate() {
             const name = document.getElementById('nb-name-input').value.trim();
             if (!name) { document.getElementById('nb-name-input').focus(); return; }
-            createNotebook(name);
-            closeCreateModal();
-        }
-
-        function createNotebook(name) {
             const notebooks = JSON.parse(localStorage.getItem('notebooks') || '[]');
             const id = 'nb_' + Date.now();
             notebooks.push({ id, name, cells: [], updatedAt: Date.now() });
             localStorage.setItem('notebooks', JSON.stringify(notebooks));
-            loadNotebooks();
-            // Open the new notebook
-            setTimeout(() => window.location.href = `ide.html?id=${id}`, 100);
+            closeCreateModal();
+            setTimeout(() => window.location.href = `ide.html?id=${id}`, 80);
         }
 
         function deleteNotebook(id) {
@@ -563,21 +305,16 @@
             loadNotebooks();
         }
 
-        // Helpers
-        function escapeHtml(str) {
-            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-
+        function escapeHtml(str) { return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
         function getTimeAgo(date) {
             const secs = Math.floor((Date.now() - date.getTime()) / 1000);
             if (secs < 60) return 'just now';
-            if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-            if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-            if (secs < 604800) return `${Math.floor(secs / 86400)}d ago`;
+            if (secs < 3600) return `${Math.floor(secs/60)}m ago`;
+            if (secs < 86400) return `${Math.floor(secs/3600)}h ago`;
+            if (secs < 604800) return `${Math.floor(secs/86400)}d ago`;
             return date.toLocaleDateString();
         }
 
-        // Keyboard shortcut
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openCreateModal(); }
             if (e.key === 'Escape') closeCreateModal();

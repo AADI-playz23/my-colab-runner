@@ -3,522 +3,278 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevBox — Choose Your Plan</title>
+    <title>DevBox — Pricing Plans</title>
     <meta name="description" content="Flexible pricing plans for high performance cloud notebooks.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #fdf8f8; color: #1A1A1A; min-height: 100vh; }
 
-        :root {
-            --accent-blue: #1A1A1A;
-            --accent-purple: #1c1b1a;
-            --accent-cyan: #444748;
-            --accent-green: #16a34a;
-            --accent-red: #dc2626;
-            --accent-amber: #d97706;
-            --text-primary: #1A1A1A;
-            --text-secondary: #444748;
-            --text-muted: #8C8984;
-            --glass-bg: #ffffff;
-            --glass-border: #E5E1DA;
-            --glass-border-bright: #E5E1DA;
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 14px;
-            --radius-xl: 16px;
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        /* ── Topbar ── */
+        .topbar {
+            background: #ffffff; border-bottom: 1px solid #E5E1DA;
+            padding: 14px 48px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
         }
+        .topbar-logo { font-family: 'Sora', sans-serif; font-size: 1.1rem; font-weight: 800; color: #1A1A1A; text-decoration: none; }
+        .back-btn {
+            display: flex; align-items: center; gap: 6px; padding: 7px 14px;
+            border: 1px solid #E5E1DA; border-radius: 7px; background: transparent;
+            font-size: 0.78rem; font-weight: 600; color: #888; cursor: pointer;
+            font-family: inherit; transition: 0.18s; text-decoration: none;
+        }
+        .back-btn:hover { border-color: #1A1A1A; color: #1A1A1A; }
+        .back-btn .material-symbols-outlined { font-size: 0.95rem; }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #fdf8f8;
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
+        /* ── Hero ── */
+        .hero { text-align: center; padding: 64px 24px 48px; }
+        .hero-eyebrow {
+            display: inline-block; font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.15em; text-transform: uppercase; color: #888;
+            background: #f1edec; border: 1px solid #E5E1DA; border-radius: 50px;
+            padding: 5px 16px; margin-bottom: 20px;
         }
+        .hero h1 { font-family: 'Sora', sans-serif; font-size: 2.8rem; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 12px; }
+        .hero p { font-size: 1rem; color: #888; max-width: 460px; margin: 0 auto; line-height: 1.7; }
 
-        /* Animated background */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 70% 50% at 50% 10%, rgba(139,92,246,0.12) 0%, transparent 60%),
-                radial-gradient(ellipse 55% 45% at 85% 85%, rgba(59,130,246,0.08) 0%, transparent 60%),
-                linear-gradient(160deg, #060810 0%, #080c18 60%, #050710 100%);
-            z-index: 0;
-            pointer-events: none;
-            animation: bgPulse 12s ease-in-out infinite alternate;
-        }
-        @keyframes bgPulse { 0% { opacity: 1; } 100% { opacity: 0.75; } }
-
-        /* Grid */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(148,163,184,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(148,163,184,0.02) 1px, transparent 1px);
-            background-size: 60px 60px;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .orb { position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0; }
-        .orb-1 { width: 450px; height: 450px; background: rgba(139,92,246,0.06); top: -120px; left: -120px; animation: orbDrift 22s ease-in-out infinite; }
-        .orb-2 { width: 350px; height: 350px; background: rgba(59,130,246,0.05); bottom: -80px; right: -80px; animation: orbDrift 28s ease-in-out infinite reverse; }
-        @keyframes orbDrift {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(30px, -25px); }
-        }
-
-        /* Layout */
-        .page-wrapper {
-            position: relative;
-            z-index: 1;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Header */
-        .header {
-            padding: 14px 28px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(6, 8, 16, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            position: sticky;
-            top: 0;
-            z-index: 50;
-        }
-        .header-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
-        .logo-icon { font-size: 20px; filter: drop-shadow(0 0 8px rgba(59,130,246,0.6)); }
-        .logo-text {
-            font-size: 18px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            background: linear-gradient(135deg, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 18px;
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: var(--transition);
-            border: 1px solid transparent;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-        .btn-ghost {
-            background: rgba(255,255,255,0.04);
-            border-color: var(--glass-border-bright);
-            color: var(--text-secondary);
-        }
-        .btn-ghost:hover {
-            background: rgba(255,255,255,0.07);
-            color: var(--text-primary);
-            border-color: rgba(148,163,184,0.28);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            color: white;
-            border-color: rgba(255,255,255,0.1);
-            text-align: center;
-            justify-content: center;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35);
-        }
-
-        .main {
-            flex: 1;
-            padding: 60px 24px;
-            max-width: 1040px;
-            margin: 0 auto;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .page-header {
-            text-align: center;
-            margin-bottom: 48px;
-        }
-
-        .page-title {
-            font-size: 36px;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #f8fafc, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .page-subtitle {
-            font-size: 15px;
-            color: var(--text-secondary);
-        }
-
-        /* Plans Grid */
-        .plans-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            width: 100%;
-            margin-bottom: 40px;
-        }
+        /* ── Plans Grid ── */
+        .plans-section { max-width: 1040px; margin: 0 auto; padding: 0 24px 80px; }
+        .plans-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 
         .plan-card {
-            background: rgba(10, 15, 35, 0.55);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 32px;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            transition: var(--transition);
+            background: #ffffff; border: 1.5px solid #E5E1DA; border-radius: 16px;
+            padding: 32px 28px; display: flex; flex-direction: column; transition: 0.25s;
+            position: relative; overflow: hidden;
+        }
+        .plan-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: #1A1A1A; opacity: 0; transition: 0.25s;
+        }
+        .plan-card:hover { border-color: #1A1A1A; transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
+        .plan-card:hover::before { opacity: 1; }
+        .plan-card.popular { border-color: #1A1A1A; border-width: 2px; }
+        .plan-card.popular::before { opacity: 1; }
+
+        .popular-tag {
+            position: absolute; top: 16px; right: 16px;
+            background: #1A1A1A; color: #fff; font-size: 0.6rem; font-weight: 800;
+            letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 50px;
         }
 
-        .plan-card:hover {
-            border-color: rgba(139, 92, 246, 0.3);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.1);
-        }
+        .plan-icon { font-size: 1.5rem; margin-bottom: 16px; }
+        .plan-name { font-family: 'Sora', sans-serif; font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; }
+        .plan-desc { font-size: 0.78rem; color: #888; margin-bottom: 20px; line-height: 1.5; }
+        .plan-price { margin-bottom: 24px; }
+        .price-amount { font-family: 'Sora', sans-serif; font-size: 2.4rem; font-weight: 800; letter-spacing: -0.03em; }
+        .price-period { font-size: 0.82rem; color: #888; font-weight: 500; }
 
-        .plan-card.popular {
-            border-color: rgba(59, 130, 246, 0.35);
-            background: rgba(12, 20, 50, 0.65);
-        }
-        
-        .plan-card.popular::before {
-            content: 'POPULAR';
-            position: absolute;
-            top: 14px;
-            right: 14px;
-            background: var(--accent-blue);
-            color: white;
-            font-size: 9px;
-            font-weight: 800;
-            padding: 3px 8px;
-            border-radius: 20px;
-            letter-spacing: 0.05em;
-        }
+        .plan-divider { height: 1px; background: #E5E1DA; margin-bottom: 20px; }
 
-        .plan-name {
-            font-size: 20px;
-            font-weight: 800;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
+        .plan-features { list-style: none; margin-bottom: 28px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .plan-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; color: #444; }
+        .plan-features li .material-symbols-outlined { font-size: 0.95rem; color: #16a34a; flex-shrink: 0; margin-top: 1px; }
+        .plan-features li.dim { color: #bbb; }
+        .plan-features li.dim .material-symbols-outlined { color: #ddd; }
 
-        .plan-price {
-            font-size: 32px;
-            font-weight: 800;
-            margin-bottom: 20px;
-            color: var(--text-primary);
+        .plan-cta {
+            width: 100%; padding: 11px; border-radius: 9px; font-size: 0.875rem; font-weight: 700;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; border: 1.5px solid;
         }
-        .plan-price span {
-            font-size: 14px;
-            font-weight: 400;
-            color: var(--text-secondary);
-        }
+        .cta-filled { background: #1A1A1A; color: #fff; border-color: #1A1A1A; }
+        .cta-filled:hover { background: #333; }
+        .cta-outline { background: transparent; color: #1A1A1A; border-color: #E5E1DA; }
+        .cta-outline:hover { border-color: #1A1A1A; }
+        .cta-disabled { background: #f1edec; color: #aaa; border-color: #E5E1DA; cursor: default; }
 
-        .plan-features {
-            list-style: none;
-            margin-bottom: 32px;
-            flex: 1;
-        }
-
-        .plan-features li {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .plan-features li::before {
-            content: '✓';
-            color: var(--accent-green);
-            font-weight: bold;
-        }
-
-        .plan-features li.disabled {
-            color: var(--text-muted);
-            text-decoration: line-through;
-            opacity: 0.6;
-        }
-        .plan-features li.disabled::before {
-            content: '✗';
-            color: var(--accent-red);
-        }
-
-        /* Payment Modal Styling */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-overlay.open { display: flex; }
-
+        /* ── Modal ── */
+        .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-bg.open { display: flex; }
         .modal {
-            background: rgba(8, 12, 28, 0.95);
-            border: 1px solid rgba(139, 92, 246, 0.25);
-            border-radius: var(--radius-xl);
-            padding: 32px;
-            width: 100%;
-            max-width: 440px;
-            box-shadow: 0 0 60px rgba(139, 92, 246, 0.15), 0 40px 80px rgba(0,0,0,0.6);
-            animation: fadeInUp 0.25s ease;
+            background: #ffffff; border: 1.5px solid #E5E1DA; border-radius: 18px;
+            padding: 36px; width: 100%; max-width: 440px; box-shadow: 0 24px 60px rgba(0,0,0,0.14);
         }
+        .modal-hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+        .modal-hdr h3 { font-family: 'Sora', sans-serif; font-size: 1.2rem; font-weight: 800; }
+        .modal-close { background: none; border: none; cursor: pointer; color: #aaa; padding: 0; }
+        .modal-close .material-symbols-outlined { font-size: 1.2rem; }
+        .modal-desc { font-size: 0.82rem; color: #888; margin-bottom: 24px; line-height: 1.5; }
 
-        .modal-title {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: 8px;
+        .upi-box {
+            background: #f7f3f2; border: 1px solid #E5E1DA; border-radius: 10px;
+            padding: 16px 20px; text-align: center; margin-bottom: 20px;
         }
+        .upi-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 6px; }
+        .upi-id { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: #1A1A1A; margin-bottom: 4px; }
+        .upi-price { font-family: 'Sora', sans-serif; font-size: 1.8rem; font-weight: 800; color: #16a34a; }
 
-        .modal-desc {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 24px;
-            line-height: 1.5;
+        .upload-area {
+            border: 2px dashed #E5E1DA; border-radius: 10px; padding: 28px;
+            text-align: center; cursor: pointer; transition: 0.2s; margin-bottom: 20px;
         }
+        .upload-area:hover { border-color: #1A1A1A; }
+        .upload-area .material-symbols-outlined { font-size: 2rem; color: #ccc; display: block; margin-bottom: 6px; }
+        .upload-label { font-size: 0.82rem; color: #888; }
 
-        .payment-box {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--glass-border-bright);
-            border-radius: var(--radius-md);
-            padding: 18px;
-            text-align: center;
-            margin-bottom: 20px;
+        .modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+        .btn-cancel-m {
+            padding: 9px 20px; background: #f1edec; border: 1px solid #E5E1DA;
+            border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit;
         }
-
-        .upi-id {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--accent-cyan);
-            margin: 8px 0;
-            user-select: all;
+        .btn-cancel-m:hover { border-color: #1A1A1A; }
+        .btn-submit-m {
+            padding: 9px 20px; background: #1A1A1A; color: #fff;
+            border: none; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: inherit;
         }
-
-        .upi-price {
-            font-size: 26px;
-            font-weight: 800;
-            color: var(--accent-green);
-            margin: 6px 0;
-        }
-
-        .screenshot-area {
-            border: 2px dashed var(--glass-border-bright);
-            border-radius: var(--radius-md);
-            padding: 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition);
-            margin-bottom: 20px;
-            color: var(--text-secondary);
-        }
-        .screenshot-area:hover {
-            border-color: var(--accent-blue);
-            color: var(--text-primary);
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .btn-submit-m:hover { background: #333; }
 
         @media (max-width: 860px) {
-            .plans-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            .main {
-                padding: 40px 16px;
-            }
+            .plans-grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2rem; }
+            .topbar { padding: 14px 20px; }
         }
     </style>
 </head>
 <body>
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-
-    <div class="page-wrapper">
-        <!-- Header -->
-        <header class="header">
-            <a href="dashboard.html" class="header-logo">
-                <span class="logo-icon">⚡</span>
-                <span class="logo-text">DevBox</span>
-            </a>
-            <a href="dashboard.html" class="btn btn-ghost">← Dashboard</a>
-        </header>
-
-        <!-- Main -->
-        <main class="main">
-            <div class="page-header">
-                <h1 class="page-title">Interactive Runtime Plans</h1>
-                <p class="page-subtitle">Upgrade your workspace to access dedicated virtual environments.</p>
-            </div>
-
-            <!-- Grid -->
-            <div class="plans-grid">
-                <!-- Free -->
-                <div class="plan-card">
-                    <div class="plan-name">Free Tier</div>
-                    <div class="plan-price">₹0<span> / forever</span></div>
-                    <ul class="plan-features">
-                        <li>1 Shared CPU core</li>
-                        <li>4 GB RAM allocated</li>
-                        <li>500 MB temporary disk storage</li>
-                        <li>60 minutes session duration</li>
-                        <li>Normal priority routing queue</li>
-                        <li class="disabled">Dedicated VM resources</li>
-                        <li class="disabled">Zero inactivity timeout</li>
-                    </ul>
-                    <button class="btn btn-ghost" style="width: 100%; cursor: default; opacity: 0.65;">Active Plan</button>
-                </div>
-
-                <!-- Pro -->
-                <div class="plan-card popular">
-                    <div class="plan-name">Pro Tier</div>
-                    <div class="plan-price">₹299<span> / month</span></div>
-                    <ul class="plan-features">
-                        <li>2 CPUs allocated</li>
-                        <li>8 GB RAM allocated</li>
-                        <li>1 GB temporary disk storage</li>
-                        <li>120 minutes session duration</li>
-                        <li>Faster queue scheduling</li>
-                        <li class="disabled">Dedicated VM resources</li>
-                        <li class="disabled">Zero inactivity timeout</li>
-                    </ul>
-                    <button class="btn btn-primary" style="width: 100%;" onclick="openPayModal('Pro', 299)">Upgrade Plan</button>
-                </div>
-
-                <!-- Developer -->
-                <div class="plan-card">
-                    <div class="plan-name">Developer Tier</div>
-                    <div class="plan-price">₹999<span> / month</span></div>
-                    <ul class="plan-features">
-                        <li>4 CPUs allocated</li>
-                        <li>16 GB RAM allocated</li>
-                        <li>3 GB temporary disk storage</li>
-                        <li>360 minutes session duration</li>
-                        <li>Dedicated clean VM (100% isolated)</li>
-                        <li>Immediate priority routing</li>
-                        <li>High performance node</li>
-                    </ul>
-                    <button class="btn btn-primary" style="width: 100%;" onclick="openPayModal('Developer', 999)">Upgrade Plan</button>
-                </div>
-            </div>
-        </main>
+    <div class="topbar">
+        <a class="topbar-logo" href="dashboard.html">DevBox</a>
+        <a class="back-btn" href="dashboard.html">
+            <span class="material-symbols-outlined">arrow_back</span> Dashboard
+        </a>
     </div>
 
-    <!-- Upgrade Modal -->
-    <div class="modal-overlay" id="pay-modal" onclick="closePayModal()">
+    <div class="hero">
+        <span class="hero-eyebrow">Pricing</span>
+        <h1>Power up your workflow</h1>
+        <p>Upgrade your DevBox container for dedicated virtual environments with longer sessions and more RAM.</p>
+    </div>
+
+    <div class="plans-section">
+        <div class="plans-grid">
+            <!-- Free -->
+            <div class="plan-card">
+                <div class="plan-icon">🌱</div>
+                <div class="plan-name">Free Tier</div>
+                <div class="plan-desc">Get started with cloud notebooks at zero cost.</div>
+                <div class="plan-price">
+                    <span class="price-amount">₹0</span>
+                    <span class="price-period"> / forever</span>
+                </div>
+                <div class="plan-divider"></div>
+                <ul class="plan-features">
+                    <li><span class="material-symbols-outlined">check_circle</span> 1 Shared CPU core</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> 4 GB RAM allocated</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> 500 MB temporary disk</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> 60 min session duration</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> Normal priority queue</li>
+                    <li class="dim"><span class="material-symbols-outlined">check_circle</span> Dedicated VM resources</li>
+                    <li class="dim"><span class="material-symbols-outlined">check_circle</span> Zero inactivity timeout</li>
+                </ul>
+                <button class="plan-cta cta-disabled">Current Plan</button>
+            </div>
+
+            <!-- Pro -->
+            <div class="plan-card popular">
+                <div class="popular-tag">Popular</div>
+                <div class="plan-icon">⚡</div>
+                <div class="plan-name">Pro Tier</div>
+                <div class="plan-desc">More power for serious projects and longer sessions.</div>
+                <div class="plan-price">
+                    <span class="price-amount">₹299</span>
+                    <span class="price-period"> / month</span>
+                </div>
+                <div class="plan-divider"></div>
+                <ul class="plan-features">
+                    <li><span class="material-symbols-outlined">check_circle</span> 2 CPUs allocated</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> 8 GB RAM allocated</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> 1 GB temporary disk</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> 120 min session duration</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> Faster queue scheduling</li>
+                    <li class="dim"><span class="material-symbols-outlined">check_circle</span> Dedicated VM resources</li>
+                    <li class="dim"><span class="material-symbols-outlined">check_circle</span> Zero inactivity timeout</li>
+                </ul>
+                <button class="plan-cta cta-filled" onclick="openPayModal('Pro', 299)">Get Pro →</button>
+            </div>
+
+            <!-- Developer -->
+            <div class="plan-card">
+                <div class="plan-icon">🚀</div>
+                <div class="plan-name">Developer Tier</div>
+                <div class="plan-desc">A fully dedicated VM for production-grade workloads.</div>
+                <div class="plan-price">
+                    <span class="price-amount">₹999</span>
+                    <span class="price-period"> / month</span>
+                </div>
+                <div class="plan-divider"></div>
+                <ul class="plan-features">
+                    <li><span class="material-symbols-outlined">check_circle</span> 4 CPUs allocated</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> 16 GB RAM allocated</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> 3 GB temporary disk</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> 360 min session duration</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> Dedicated clean VM</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> Immediate priority routing</li>
+                    <li><span class="material-symbols-outlined">check_circle</span> High performance node</li>
+                </ul>
+                <button class="plan-cta cta-outline" onclick="openPayModal('Developer', 999)">Get Developer →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal-bg" id="pay-modal" onclick="closePayModal()">
         <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-title" id="pay-title">Upgrade Tier</div>
-            <div class="modal-desc">Scan or send the payment via UPI to upgrade your DevBox container slot.</div>
-            
-            <div class="payment-box">
-                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Google Pay / UPI ID</div>
+            <div class="modal-hdr">
+                <h3 id="pay-title">Upgrade Tier</h3>
+                <button class="modal-close" onclick="closePayModal()"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal-desc">Send payment via UPI and upload a screenshot. We'll review and activate your plan within 24 hours.</div>
+
+            <div class="upi-box">
+                <div class="upi-label">Google Pay / UPI ID</div>
                 <div class="upi-id">aadiplyz94@okaxis</div>
                 <div class="upi-price" id="pay-price">₹299</div>
             </div>
 
-            <div class="screenshot-area" onclick="document.getElementById('file-input').click()">
-                <div style="font-size: 24px; margin-bottom: 8px;">📷</div>
-                <div id="upload-label">Upload Payment Screenshot</div>
-                <input type="file" id="file-input" style="display: none;" accept="image/*" onchange="handleFile(this)">
+            <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                <span class="material-symbols-outlined">photo_camera</span>
+                <div class="upload-label" id="upload-label">Click to upload payment screenshot</div>
+                <input type="file" id="file-input" style="display:none;" accept="image/*" onchange="handleFile(this)">
             </div>
 
-            <div class="modal-actions">
-                <button class="btn btn-ghost" onclick="closePayModal()">Cancel</button>
-                <button class="btn btn-primary" id="btn-submit" onclick="submitUpgrade()">Submit screenshot</button>
+            <div class="modal-footer">
+                <button class="btn-cancel-m" onclick="closePayModal()">Cancel</button>
+                <button class="btn-submit-m" id="btn-submit" onclick="submitUpgrade()">Submit Screenshot</button>
             </div>
         </div>
     </div>
 
     <script>
-        let currentTier = "";
-        let currentPrice = 0;
+        let currentTier = "", currentPrice = 0;
 
         function openPayModal(tier, price) {
-            currentTier = tier;
-            currentPrice = price;
+            currentTier = tier; currentPrice = price;
             document.getElementById('pay-title').innerText = `Upgrade to ${tier} Tier`;
             document.getElementById('pay-price').innerText = `₹${price}`;
             document.getElementById('pay-modal').classList.add('open');
         }
-
         function closePayModal() {
             document.getElementById('pay-modal').classList.remove('open');
-            document.getElementById('upload-label').innerText = "Upload Payment Screenshot";
-            document.getElementById('file-input').value = "";
+            document.getElementById('upload-label').innerText = 'Click to upload payment screenshot';
+            document.getElementById('file-input').value = '';
         }
-
         function handleFile(input) {
-            if (input.files && input.files[0]) {
-                document.getElementById('upload-label').innerText = `✓ Selected: ${input.files[0].name}`;
-            }
+            if (input.files && input.files[0]) document.getElementById('upload-label').innerText = `✓ ${input.files[0].name}`;
         }
-
         function submitUpgrade() {
             const files = document.getElementById('file-input').files;
-            if (!files || files.length === 0) {
-                alert("Please upload your payment screenshot first.");
-                return;
-            }
-
+            if (!files || files.length === 0) { alert("Please upload your payment screenshot first."); return; }
             const btn = document.getElementById('btn-submit');
-            btn.innerHTML = '<span style="opacity: 0.65;">Verifying...</span>';
-            btn.disabled = true;
-
+            btn.innerText = 'Submitting...'; btn.disabled = true;
             setTimeout(() => {
-                alert(`Thank you! Your payment screenshot for the ${currentTier} tier has been submitted. Our administrators will review and update your account within 24 hours.`);
+                alert(`Thank you! Your ${currentTier} upgrade request has been submitted. Our team will verify and activate within 24 hours.`);
                 closePayModal();
-                btn.innerHTML = "Submit screenshot";
-                btn.disabled = false;
+                btn.innerText = 'Submit Screenshot'; btn.disabled = false;
             }, 1200);
         }
     </script>

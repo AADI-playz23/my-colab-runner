@@ -3,47 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absora DevBox - System Connection Tester</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <title>Absora DevBox — Connection Tester</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #fdf8f8; color: #1A1A1A; padding: 40px; }
-        .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 14px; border: 1px solid #E5E1DA; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04); }
-        h1 { font-family: 'Sora', sans-serif; margin-top: 0; color: #1A1A1A; border-bottom: 1px solid #E5E1DA; padding-bottom: 15px; }
-        .check-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #E5E1DA; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #fdf8f8; color: #1A1A1A; min-height: 100vh; padding: 40px 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 680px; }
+
+        /* Header */
+        .page-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+        .page-hdr-left { display: flex; align-items: center; gap: 12px; }
+        .page-icon { width: 44px; height: 44px; border-radius: 10px; background: #1A1A1A; display: flex; align-items: center; justify-content: center; }
+        .page-icon span { font-size: 1rem; }
+        .page-hdr h1 { font-family: 'Sora', sans-serif; font-size: 1.3rem; font-weight: 800; margin: 0; }
+        .page-hdr .sub { font-size: 0.72rem; color: #888; margin-top: 2px; }
+
+        .run-btn {
+            display: flex; align-items: center; gap: 7px;
+            background: #1A1A1A; color: #fff; border: none; padding: 9px 20px;
+            border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+            font-family: 'Inter', sans-serif; transition: 0.2s; white-space: nowrap;
+        }
+        .run-btn:hover { background: #333; }
+
+        /* Card */
+        .card { background: #fff; border: 1.5px solid #E5E1DA; border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+        .card-hdr { padding: 13px 20px; border-bottom: 1px solid #E5E1DA; background: #f7f3f2; }
+        .card-hdr h2 { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin: 0; }
+
+        /* Check items */
+        .check-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #f1edec; }
         .check-item:last-child { border-bottom: none; }
-        .check-name { font-weight: bold; font-size: 18px; }
-        .check-status { display: flex; align-items: center; gap: 10px; font-weight: bold; }
-        .btn { padding: 10px 20px; background: #1A1A1A; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 20px; font-family: 'Inter', sans-serif; font-weight: 600; }
-        .btn:hover { background: #5f5e5e; }
-        
+        .check-name { font-weight: 700; font-size: 0.95rem; }
+        .check-name .hint { font-size: 0.72rem; color: #888; font-weight: 400; margin-top: 2px; display: block; }
+        .check-status { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.875rem; }
+
         .status-loading { color: #d97706; }
         .status-success { color: #16a34a; }
-        .status-error { color: #dc2626; }
-        .error-msg { font-size: 12px; font-weight: normal; max-width: 300px; text-align: right; color: #444748; }
+        .status-error   { color: #dc2626; }
+        .error-msg { font-size: 0.72rem; font-weight: 400; color: #888; text-align: right; max-width: 280px; }
+
+        @media (max-width: 480px) { .page-hdr { flex-direction: column; align-items: flex-start; } }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <h1>System Connection Tester</h1>
-    <p>Run this tool to verify that all your Vercel Environment Variables and APIs are correctly configured.</p>
-    
-    <div class="check-item">
-        <div class="check-name">1. PostgreSQL Database Connection</div>
-        <div class="check-status" id="status-db">Not Tested</div>
-    </div>
-    
-    <div class="check-item">
-        <div class="check-name">2. Upstash Redis (Vercel KV) Connection</div>
-        <div class="check-status" id="status-kv">Not Tested</div>
-    </div>
-    
-    <div class="check-item">
-        <div class="check-name">3. GitHub API Connection (GITHUB_TOKEN)</div>
-        <div class="check-status" id="status-github">Not Tested</div>
+    <div class="page-hdr">
+        <div class="page-hdr-left">
+            <div class="page-icon">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;color:#fff;">wifi_tethering</span>
+            </div>
+            <div>
+                <h1>Connection Tester</h1>
+                <div class="sub">Verify all APIs and environment variables are correctly configured</div>
+            </div>
+        </div>
+        <button class="run-btn" onclick="runTests()">
+            <span class="material-symbols-outlined" style="font-size:1rem;">refresh</span>
+            Run All Tests
+        </button>
     </div>
 
-    <button class="btn" onclick="runTests()">Run All Connection Tests</button>
+    <div class="card">
+        <div class="card-hdr"><h2>Service Connections</h2></div>
+
+        <div class="check-item">
+            <div class="check-name">
+                1. PostgreSQL Database
+                <span class="hint">Primary data store</span>
+            </div>
+            <div class="check-status" id="status-db">Not Tested</div>
+        </div>
+
+        <div class="check-item">
+            <div class="check-name">
+                2. Upstash Redis (Vercel KV)
+                <span class="hint">Session & cache store</span>
+            </div>
+            <div class="check-status" id="status-kv">Not Tested</div>
+        </div>
+
+        <div class="check-item">
+            <div class="check-name">
+                3. GitHub API (GITHUB_TOKEN)
+                <span class="hint">Workflow dispatch</span>
+            </div>
+            <div class="check-status" id="status-github">Not Tested</div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -69,6 +118,5 @@
         testEndpoint('/api/test_connections?type=github', 'status-github');
     }
 </script>
-
 </body>
 </html>
